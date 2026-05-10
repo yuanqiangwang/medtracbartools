@@ -1,19 +1,14 @@
-const STORAGE_KEY_GEN = 'history_generate'
-const STORAGE_KEY_SCAN = 'history_scan'
-const MAX_HISTORY = 100
-
 Page({
   data: {
-    activeTab: 'generate',
-    generateList: [],
-    scanList: [],
-    previewSrc: ''
+    activeTab: 'scan',
+    searchText: '',
+    allHistory: [],
+    filteredHistory: [],
+    groupedHistory: [],
+    previewImage: ''
   },
 
-  onLoad(options) {
-    if (options.tab === 'scan') {
-      this.setData({ activeTab: 'scan' })
-    }
+  onLoad() {
     this.loadHistory()
   },
 
@@ -23,149 +18,163 @@ Page({
 
   loadHistory() {
     try {
-      const genRaw = wx.getStorageSync(STORAGE_KEY_GEN) || []
-      const scanRaw = wx.getStorageSync(STORAGE_KEY_SCAN) || []
-      this.setData({
-        generateList: genRaw.map(this.formatItem),
-        scanList: scanRaw.map(this.formatItem)
-      })
-    } catch (e) {
-      console.error('加载历史记录失败:', e)
-    }
-  },
+      const genHistory = wx.getStorageSync('gen_history') || []
+      const scanHistory = wx.getStorageSync('scan_history') || []
+      const all = []
 
-  formatItem(item) {
-    if (!item) return item
-    const d = new Date(item.timestamp || Date.now())
-    const pad = n => (n < 10 ? '0' + n : '' + n)
-    item.timeStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-    return item
+      // 生成码记录
+      genHistory.forEach(item => {
+        all.push({
+          ...item,
+          source: 'generate',
+          sourceLabel: '生成码',
+          id: 'gen_' + item.timestamp + '_' + item.text
+        })
+      })
+
+      // 扫码记录
+      scanHistory.forEach(item => {
+        all.push({
+          ...item,
+          source: 'scan',
+          sourceLabel: '扫码',
+          type: item.type === '条形码' ? 'barcode' : 'qrcode',
+          typeLabel: item.type,
+          id: 'scan_' + item.timestamp + '_' + item.value,
+          text: item.value,
+          imagePath: item.imagePath || ''
+        })
+      })
+
+      // 按时间倒序
+      all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      this.setData({ allHistory: all })
+      this.applyFilter()
+    } catch (e) {
+      console.error('读取历史失败', e)
+    }
   },
 
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab
-    this.setData({ activeTab: tab, previewSrc: '' })
+    if (tab === this.data.activeTab) return
+    this.setData({ activeTab: tab, previewImage: '' })
+    this.applyFilter()
   },
 
-  onPreviewImage(e) {
-    const src = e.currentTarget.dataset.src
-    if (!src) return
-    this.setData({ previewSrc: src })
+  onSearch(e) {
+    this.setData({ searchText: e.detail.value })
+    this.applyFilter()
   },
 
-  closePreview() {
-    this.setData({ previewSrc: '' })
-  },
-
-  onCardTap(e) {
-    const item = e.currentTarget.dataset.item
-    if (!item) return
-    // 弹出操作菜单
-    const actions = ['复制内容', '重新生成', '删除此条']
-    wx.showActionSheet({
-      itemList: actions,
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          this.copyContent(item.content)
-        } else if (res.tapIndex === 1) {
-          this.reGenerate(item)
-        } else if (res.tapIndex === 2) {
-          this.deleteItem(e.currentTarget.dataset.type, item.id)
-        }
-      }
+  applyFilter() {
+    const { activeTab, searchText, allHistory } = this.data
+    // 按 source 过滤：scan 或 generate
+    let filtered = allHistory.filter(item => item.source === activeTab)
+    if (searchText.trim()) {
+      const kw = searchText.trim().toLowerCase()
+      filtered = filtered.filter(item =>
+        (item.text && item.text.toLowerCase().includes(kw))
+      )
+    }
+    // 按日期分组
+    const groups = {}
+    filtered.forEach(item => {
+      const dateKey = item.date || this.formatDate(item.timestamp) || '未知日期'
+      if (!groups[dateKey]) groups[dateKey] = []
+      groups[dateKey].push(item)
     })
+    const groupedHistory = Object.keys(groups).map(date => ({
+      date,
+      items: groups[date]
+    }))
+
+    this.setData({ filteredHistory: filtered, groupedHistory })
   },
 
-  onCopyContent(e) {
-    const content = e.currentTarget.dataset.content
-    this.copyContent(content)
+  formatDate(timestamp) {
+    if (!timestamp) return '未知日期'
+    const d = new Date(timestamp)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    const diff = today - target
+    if (diff === 0) return '今天'
+    if (diff === 86400000) return '昨天'
+    if (diff < 7 * 86400000) return `${Math.floor(diff / 86400000)}天前`
+    return `${d.getMonth() + 1}月${d.getDate()}日`
   },
 
-  copyContent(content) {
-    if (!content) return
+  onItemTap(e) {
+    const id = e.currentTarget.dataset.id
+    const item = this.data.filteredHistory.find(h => h.id === id)
+    if (!item) return
     wx.setClipboardData({
-      data: content,
+      data: item.text,
       success: () => wx.showToast({ title: '已复制', icon: 'success' })
     })
   },
 
-  reGenerate(item) {
-    if (!item || !item.content) return
-    const type = item.codeType === 'barcode' ? 'barcode' : 'qrcode'
-    wx.navigateTo({
-      url: `/pages/${type}/${type}?text=${encodeURIComponent(item.content)}`
+  onThumbTap(e) {
+    const imagePath = e.currentTarget.dataset.image
+    if (!imagePath) {
+      wx.showToast({ title: '无预览图', icon: 'none' })
+      return
+    }
+    this.setData({ previewImage: imagePath })
+  },
+
+  closePreview() {
+    this.setData({ previewImage: '' })
+  },
+
+  onCopyItem(e) {
+    const text = e.currentTarget.dataset.text
+    wx.setClipboardData({
+      data: text,
+      success: () => wx.showToast({ title: '已复制', icon: 'success' })
     })
   },
 
-  deleteItem(type, id) {
-    const key = type === 'generate' ? STORAGE_KEY_GEN : STORAGE_KEY_SCAN
-    const listKey = type === 'generate' ? 'generateList' : 'scanList'
-    try {
-      const list = wx.getStorageSync(key) || []
-      const newList = list.filter(i => i.id !== id)
-      wx.setStorageSync(key, newList)
-      this.setData({ [listKey]: newList.map(this.formatItem) })
-      wx.showToast({ title: '已删除', icon: 'success' })
-    } catch (e) {
-      wx.showToast({ title: '删除失败', icon: 'none' })
-    }
-  },
-
-  onClearHistory() {
-    const tab = this.data.activeTab
-    const label = tab === 'generate' ? '生成' : '扫码'
+  onDeleteItem(e) {
+    const id = e.currentTarget.dataset.id
     wx.showModal({
-      title: '清空记录',
-      content: `确定清空所有${label}记录吗？此操作不可恢复。`,
-      confirmColor: '#e04040',
+      title: '删除记录',
+      content: '确定删除这条记录吗？',
       success: (res) => {
         if (!res.confirm) return
-        const key = tab === 'generate' ? STORAGE_KEY_GEN : STORAGE_KEY_SCAN
-        const listKey = tab === 'generate' ? 'generateList' : 'scanList'
-        try {
-          wx.removeStorageSync(key)
-          this.setData({ [listKey]: [] })
-          wx.showToast({ title: '已清空', icon: 'success' })
-        } catch (e) {
-          wx.showToast({ title: '清空失败', icon: 'none' })
+        const item = this.data.allHistory.find(h => h.id === id)
+        if (!item) return
+        if (item.source === 'generate') {
+          let genHistory = wx.getStorageSync('gen_history') || []
+          genHistory = genHistory.filter(h => !(h.text === item.text && h.type === item.type && h.timestamp === item.timestamp))
+          wx.setStorageSync('gen_history', genHistory)
+        } else {
+          let scanHistory = wx.getStorageSync('scan_history') || []
+          scanHistory = scanHistory.filter(h => !(h.value === item.text && h.type === item.typeLabel && h.timestamp === item.timestamp))
+          wx.setStorageSync('scan_history', scanHistory)
         }
+        this.loadHistory()
+        wx.showToast({ title: '已删除', icon: 'success' })
+      }
+    })
+  },
+
+  clearAll() {
+    wx.showModal({
+      title: '清空记录',
+      content: '确定清空所有' + (this.data.activeTab === 'scan' ? '扫码' : '生成码') + '记录吗？',
+      success: (res) => {
+        if (!res.confirm) return
+        const { activeTab } = this.data
+        if (activeTab === 'scan') {
+          wx.removeStorageSync('scan_history')
+        } else {
+          wx.removeStorageSync('gen_history')
+        }
+        this.loadHistory()
+        wx.showToast({ title: '已清空', icon: 'success' })
       }
     })
   }
 })
-
-// 工具方法：保存历史记录（供其他页面调用）
-function saveGenerateHistory(item) {
-  try {
-    const list = wx.getStorageSync(STORAGE_KEY_GEN) || []
-    list.unshift({
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      codeType: item.codeType, // 'qrcode' | 'barcode'
-      content: item.content,
-      imagePath: item.imagePath || '',
-      timestamp: Date.now()
-    })
-    if (list.length > MAX_HISTORY) list.length = MAX_HISTORY
-    wx.setStorageSync(STORAGE_KEY_GEN, list)
-  } catch (e) {
-    console.error('保存生成记录失败:', e)
-  }
-}
-
-function saveScanHistory(item) {
-  try {
-    const list = wx.getStorageSync(STORAGE_KEY_SCAN) || []
-    list.unshift({
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      scanType: item.scanType || 'QR_CODE', // 'QR_CODE' | 'BARCODE'
-      content: item.content,
-      timestamp: Date.now()
-    })
-    if (list.length > MAX_HISTORY) list.length = MAX_HISTORY
-    wx.setStorageSync(STORAGE_KEY_SCAN, list)
-  } catch (e) {
-    console.error('保存扫码记录失败:', e)
-  }
-}
-
-module.exports = { saveGenerateHistory, saveScanHistory }

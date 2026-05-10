@@ -25,7 +25,7 @@
       <view class="user-card" wx:for="{{users}}" wx:key="openid">
         <view class="user-info">
           <view class="user-top-row">
-            <image class="user-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" wx:if="{{item.avatarUrl}}"></image>
+            <image class="user-avatar" src="{{item.avatarUrl}}" mode="aspectFill" wx:if="{{item.avatarUrl}}"></image>
             <view class="user-avatar-placeholder" wx:else></view>
             <view class="user-text-info">
               <text class="user-nickname">{{item.nickName || '未填写'}}</text>

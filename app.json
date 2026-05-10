@@ -2,7 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/barcode/barcode",
-    "pages/scan/scan",
+    "pages/history/history",
+    "pages/admin/admin",
     "pages/logs/logs"
   ],
   "window": {

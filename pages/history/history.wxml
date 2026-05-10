@@ -1,74 +1,81 @@
-<view class="page">
-  <!-- Tab 切换 -->
+<scroll-view scroll-y class="container">
+  <!-- 顶部选项卡：扫码 / 生成码 -->
   <view class="tab-bar">
-    <view class="tab-item {{activeTab === 'generate' ? 'tab-active' : ''}}" bindtap="switchTab" data-tab="generate">
-      <text class="tab-text">生成记录</text>
-      <view class="tab-indicator" wx:if="{{activeTab === 'generate'}}"></view>
-    </view>
     <view class="tab-item {{activeTab === 'scan' ? 'tab-active' : ''}}" bindtap="switchTab" data-tab="scan">
-      <text class="tab-text">扫码记录</text>
-      <view class="tab-indicator" wx:if="{{activeTab === 'scan'}}"></view>
+      <image class="tab-icon" src="/images/icon-scan.svg" mode="aspectFit" />
+      <text>扫码</text>
+    </view>
+    <view class="tab-item {{activeTab === 'generate' ? 'tab-active' : ''}}" bindtap="switchTab" data-tab="generate">
+      <image class="tab-icon" src="/images/icon-qr.svg" mode="aspectFit" />
+      <text>生成码</text>
     </view>
   </view>
 
-  <!-- 生成记录列表 -->
-  <scroll-view scroll-y class="list-area" wx:if="{{activeTab === 'generate'}}">
-    <view class="empty-state" wx:if="{{generateList.length === 0}}">
-      <view class="empty-icon-wrap icon-gen-empty"></view>
-      <text class="empty-title">暂无生成记录</text>
-      <text class="empty-hint">生成条码或二维码后会自动保存到这里</text>
-    </view>
-    <view class="card" wx:for="{{generateList}}" wx:key="id" bindtap="onCardTap" data-item="{{item}}" data-type="generate">
-      <view class="card-preview" catchtap="onPreviewImage" data-src="{{item.imagePath}}">
-        <image class="card-preview-img {{item.codeType === 'barcode' ? 'barcode-preview' : ''}}" src="{{item.imagePath}}" mode="aspectFit" />
-      </view>
-      <view class="card-info">
-        <view class="card-type-row">
-          <text class="card-type-tag {{item.codeType === 'qrcode' ? 'tag-qr' : 'tag-bar'}}">{{item.codeType === 'qrcode' ? '二维码' : '条形码'}}</text>
-          <text class="card-time">{{item.timeStr}}</text>
-        </view>
-        <text class="card-content">{{item.content}}</text>
-      </view>
-      <view class="card-action" catchtap="onCopyContent" data-content="{{item.content}}">
-        <view class="action-icon icon-copy-sm"></view>
-      </view>
-    </view>
-  </scroll-view>
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <image class="search-icon" src="/images/icon-scan.svg" mode="aspectFit" />
+    <input class="search-input" placeholder="搜索记录..." value="{{searchText}}" bindinput="onSearch" confirm-type="search" />
+  </view>
 
-  <!-- 扫码记录列表 -->
-  <scroll-view scroll-y class="list-area" wx:if="{{activeTab === 'scan'}}">
-    <view class="empty-state" wx:if="{{scanList.length === 0}}">
-      <view class="empty-icon-wrap icon-scan-empty"></view>
-      <text class="empty-title">暂无扫码记录</text>
-      <text class="empty-hint">扫码识别后会自动保存到这里</text>
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{filteredHistory.length === 0}}">
+    <view class="empty-icon-wrap">
+      <image class="empty-icon" src="/images/icon-{{activeTab === 'scan' ? 'scan' : 'qr'}}.svg" mode="aspectFit" />
     </view>
-    <view class="card" wx:for="{{scanList}}" wx:key="id" bindtap="onCardTap" data-item="{{item}}" data-type="scan">
-      <view class="card-preview card-preview-scan">
-        <view class="scan-type-icon {{item.scanType === 'QR_CODE' ? 'icon-qr-sm' : 'icon-bar-sm'}}"></view>
-      </view>
-      <view class="card-info">
-        <view class="card-type-row">
-          <text class="card-type-tag {{item.scanType === 'QR_CODE' ? 'tag-qr' : 'tag-bar'}}">{{item.scanType === 'QR_CODE' ? '二维码' : '条形码'}}</text>
-          <text class="card-time">{{item.timeStr}}</text>
-        </view>
-        <text class="card-content">{{item.content}}</text>
-      </view>
-      <view class="card-action" catchtap="onCopyContent" data-content="{{item.content}}">
-        <view class="action-icon icon-copy-sm"></view>
-      </view>
-    </view>
-  </scroll-view>
+    <text class="empty-text">{{searchText ? '未找到匹配记录' : '暂无' + (activeTab === 'scan' ? '扫码' : '生成码') + '记录'}}</text>
+  </view>
 
-  <!-- 底部操作栏 -->
-  <view class="bottom-bar" wx:if="{{(activeTab === 'generate' && generateList.length > 0) || (activeTab === 'scan' && scanList.length > 0)}}">
-    <view class="bottom-btn btn-clear" bindtap="onClearHistory">
-      <text>清空记录</text>
-    </view>
+  <!-- 历史列表 - 按日期分组 -->
+  <view class="history-list" wx:if="{{filteredHistory.length > 0}}">
+    <block wx:for="{{groupedHistory}}" wx:key="date">
+      <view class="date-group">
+        <text class="date-label">{{item.date}}</text>
+        <view class="date-items">
+          <view class="history-item" wx:for="{{item.items}}" wx:for-item="record" wx:key="id" bindtap="onItemTap" data-id="{{record.id}}">
+            <!-- 缩略图（仅生成码记录） -->
+            <view class="item-thumb" wx:if="{{record.source === 'generate'}}" bindtap="onThumbTap" data-id="{{record.id}}" data-image="{{record.imagePath}}">
+              <image class="thumb-img {{record.type === 'barcode' ? 'thumb-bar' : ''}}" src="{{record.imagePath}}" mode="aspectFit" wx:if="{{record.imagePath}}" />
+              <view class="thumb-placeholder" wx:else>
+                <image class="thumb-placeholder-icon" src="/images/icon-{{record.type}}.svg" mode="aspectFit" />
+              </view>
+            </view>
+            <!-- 扫码图标（仅扫码记录） -->
+            <view class="item-scan-icon" wx:if="{{record.source === 'scan'}}">
+              <image class="scan-type-img" src="/images/icon-scan.svg" mode="aspectFit" />
+            </view>
+            <!-- 内容 -->
+            <view class="item-content">
+              <text class="item-text">{{record.text}}</text>
+              <view class="item-meta">
+                <text class="item-type-badge {{record.type}}">{{record.typeLabel}}</text>
+                <text class="item-time">{{record.time}}</text>
+              </view>
+            </view>
+            <!-- 操作 -->
+            <view class="item-actions">
+              <view class="action-icon" catchtap="onCopyItem" data-text="{{record.text}}">
+                <image class="action-img" src="/images/icon-copy.svg" mode="aspectFit" />
+              </view>
+              <view class="action-icon" catchtap="onDeleteItem" data-id="{{record.id}}">
+                <image class="action-img" src="/images/icon-delete.svg" mode="aspectFit" />
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
   </view>
 
   <!-- 图片放大预览 -->
-  <view class="preview-mask" wx:if="{{previewSrc}}" bindtap="closePreview" catchtouchmove="true">
-    <image class="preview-full-img" src="{{previewSrc}}" mode="aspectFit" />
-    <view class="preview-close-tip">点击任意位置关闭</view>
+  <view class="image-overlay" wx:if="{{previewImage}}" bindtap="closePreview" catchtouchmove="true">
+    <image class="preview-fullscreen" src="{{previewImage}}" mode="aspectFit" />
+    <view class="preview-hint">点击任意位置关闭</view>
   </view>
-</view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-actions" wx:if="{{filteredHistory.length > 0}}">
+    <view class="btn-clear" bindtap="clearAll">
+      <text>清空所有记录</text>
+    </view>
+  </view>
+</scroll-view>

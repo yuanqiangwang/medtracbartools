@@ -1,7 +1,7 @@
 const cloud = require('wx-server-sdk')
 const ApiClient = require('./sdk/index.js').ApiClient
 
-cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+cloud.init({ env: 'cloud1-d8gp0p7d2f9b2ce45' })
 
 const db = cloud.database()
 const DAILY_LIMIT = 5
@@ -256,6 +256,24 @@ exports.main = async (event, context) => {
           u.nickName = (infoMap[u.openid] && infoMap[u.openid].nickName) || ''
           u.avatarUrl = (infoMap[u.openid] && infoMap[u.openid].avatarUrl) || ''
         })
+        // 将 cloud:// 头像转为临时 HTTP 链接，否则其他用户无法访问
+        const cloudAvatars = users.filter(u => u.avatarUrl && u.avatarUrl.startsWith('cloud://')).map(u => u.avatarUrl)
+        if (cloudAvatars.length > 0) {
+          try {
+            const urlRes = await cloud.getTempFileURL({ fileList: cloudAvatars })
+            if (urlRes.fileList) {
+              const urlMap = {}
+              urlRes.fileList.forEach(f => { if (f.tempFileURL) urlMap[f.fileID] = f.tempFileURL })
+              users.forEach(u => {
+                if (u.avatarUrl && urlMap[u.avatarUrl]) {
+                  u.avatarUrl = urlMap[u.avatarUrl]
+                }
+              })
+            }
+          } catch (e) {
+            console.error('获取头像临时链接失败:', e.message)
+          }
+        }
         return { code: 0, data: { users } }
       }
 

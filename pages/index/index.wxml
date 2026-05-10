@@ -1,87 +1,188 @@
 <scroll-view scroll-y class="container">
-  <!-- 顶部 Logo 区域 -->
+  <!-- Header -->
   <view class="header">
-    <text class="app-name">MedTrac</text>
-    <text class="app-desc">条码 · 二维码 · 扫码工具</text>
+    <text class="header-title" bindtap="onHeaderTap">MedTrac</text>
   </view>
 
-  <!-- 快速输入 -->
-  <view class="quick-input-card">
-    <input class="quick-input" placeholder="输入文本快速生成码图" value="{{inputText}}" bindinput="onInputChange" confirm-type="done" bindconfirm="quickGenerate" />
-
-    <!-- 药品追溯码识别 -->
-    <view class="drug-trace-info" wx:if="{{isDrugTrace}}">
-      <view class="drug-badge">药品追溯码</view>
-      <view class="drug-detail">
-        <view class="drug-detail-row">
-          <text class="drug-label">药品标识码</text>
-          <text class="drug-value highlight">{{drugIdCode}}</text>
-        </view>
-        <view class="drug-detail-row">
-          <text class="drug-label">序列号</text>
-          <text class="drug-value">{{drugSerialNo}}</text>
+  <!-- 输入 + 码类型 -->
+  <view class="input-section">
+    <view class="input-row">
+      <view class="input-wrap">
+        <input class="input-field" placeholder="输入文本生成码图" value="{{inputText}}" bindinput="onInputChange" confirm-type="done" bindconfirm="quickGenerate" />
+        <view class="input-actions" wx:if="{{inputText}}">
+          <view class="input-action-btn" catchtap="copyInputText">
+            <image class="input-action-icon" src="/images/icon-copy.svg" mode="aspectFit" />
+          </view>
+          <view class="input-action-btn" catchtap="clearInputText">
+            <image class="input-action-icon" src="/images/icon-delete.svg" mode="aspectFit" />
+          </view>
         </view>
       </view>
+      <view class="btn-generate" bindtap="quickGenerate">
+        <image class="btn-icon" src="/images/icon-refresh.svg" mode="aspectFit" />
+      </view>
     </view>
-
-    <view class="quick-btns">
-      <button class="quick-btn qr-btn" bindtap="quickQR">二维码</button>
-      <button class="quick-btn bar-btn" bindtap="quickBar">条形码</button>
+    <view class="type-tabs">
+      <view class="tab {{codeType === 'barcode' ? 'tab-active' : ''}}" bindtap="switchCodeType" data-type="barcode">
+        <image class="tab-icon" src="/images/icon-bar.svg" mode="aspectFit" />
+        <text>Barcode</text>
+      </view>
+      <view class="tab {{codeType === 'qrcode' ? 'tab-active' : ''}}" bindtap="switchCodeType" data-type="qrcode">
+        <image class="tab-icon" src="/images/icon-qr.svg" mode="aspectFit" />
+        <text>QR Code</text>
+      </view>
     </view>
   </view>
 
-  <!-- 功能入口 -->
-  <view class="feature-grid">
-    <view class="feature-card" bindtap="goToQRCode">
-      <view class="feature-icon qr-icon">
-        <text class="icon-emoji">▣</text>
+  <!-- 药品追溯码识别 -->
+  <view class="drug-trace" wx:if="{{isDrugTrace}}">
+    <view class="drug-badge">药品追溯码</view>
+    <view class="drug-detail">
+      <view class="drug-row">
+        <text class="drug-label">药品标识码</text>
+        <text class="drug-value highlight">{{drugIdCode}}</text>
       </view>
-      <text class="feature-name">生成二维码</text>
-      <text class="feature-desc">输入文本/网址生成</text>
+      <view class="drug-row">
+        <text class="drug-label">序列号</text>
+        <text class="drug-value">{{drugSerialNo}}</text>
+      </view>
     </view>
+    <button class="drug-query-btn" bindtap="onQueryDrug" disabled="{{drugLoading || quotaLoading || (isLoggedIn && !isVip && quotaRemaining === 0)}}">
+      <text wx:if="{{quotaLoading}}">检查中...</text>
+      <text wx:elif="{{!isLoggedIn}}">点击授权查询</text>
+      <text wx:elif="{{isVip}}">{{drugLoading ? '查询中...' : '查询药品信息'}}</text>
+      <text wx:elif="{{quotaRemaining === 0}}">今日次数已用完</text>
+      <text wx:elif="{{drugLoading}}">查询中...</text>
+      <text wx:else>查询药品信息 (剩{{quotaRemaining}}次)</text>
+    </button>
+  </view>
 
-    <view class="feature-card" bindtap="goToBarcode">
-      <view class="feature-icon bar-icon">
-        <text class="icon-emoji">║</text>
-      </view>
-      <text class="feature-name">生成条形码</text>
-      <text class="feature-desc">Code 128 编码</text>
+  <!-- 药品信息查询结果 -->
+  <view class="drug-result" wx:if="{{drugInfo || drugLoading}}">
+    <view class="drug-loading" wx:if="{{drugLoading}}">
+      <view class="spinner"></view>
+      <text>正在查询...</text>
     </view>
-
-    <view class="feature-card" bindtap="goToScan">
-      <view class="feature-icon scan-icon">
-        <text class="icon-emoji">📷</text>
+    <view class="drug-info-card" wx:if="{{drugInfo && !drugLoading}}">
+      <block wx:if="{{!drugInfo.empty && !drugInfo.error}}">
+        <view class="drug-info-header {{drugInfoCollapsed ? 'list-collapsed-header' : ''}}" bindtap="toggleDrugInfo">
+          <view class="drug-info-title-row">
+            <text class="drug-name">{{drugInfo.drugName}}</text>
+            <text class="drug-collapse-icon {{drugInfoCollapsed ? '' : 'icon-expanded'}}">›</text>
+          </view>
+          <view class="drug-tags" wx:if="{{!drugInfoCollapsed}}">
+            <text class="drug-tag" wx:if="{{drugInfo.dosageForm}}">{{drugInfo.dosageForm}}</text>
+            <text class="drug-tag {{drugInfo.physicType === '特殊药品制剂' ? 'tag-danger' : ''}}" wx:if="{{drugInfo.physicType}}">{{drugInfo.physicType}}</text>
+            <text class="drug-tag" wx:if="{{drugInfo.packageLevel}}">{{drugInfo.packageLevel}}</text>
+            <text class="drug-tag tag-status {{drugInfo.status === '已注销' || drugInfo.status === '码不存在' ? 'tag-out' : drugInfo.status === '码不存在' ? 'tag-none' : ''}}" wx:if="{{drugInfo.status}}">{{drugInfo.status}}</text>
+          </view>
+        </view>
+        <view class="drug-info-list {{drugInfoCollapsed ? 'list-collapsed' : ''}}">
+          <view class="info-row" wx:if="{{drugInfo.approvalNo}}"><text class="info-label">批准文号</text><text class="info-value">{{drugInfo.approvalNo}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.producer}}"><text class="info-label">生产企业</text><text class="info-value">{{drugInfo.producer}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.spec}}"><text class="info-label">制剂规格</text><text class="info-value">{{drugInfo.spec}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.pkgSpec}}"><text class="info-label">包装规格</text><text class="info-value">{{drugInfo.pkgSpec}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.exprie}}"><text class="info-label">有效期</text><text class="info-value">{{drugInfo.exprie}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.batchNo}}"><text class="info-label">批号</text><text class="info-value">{{drugInfo.batchNo}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.produceDate}}"><text class="info-label">生产日期</text><text class="info-value">{{drugInfo.produceDate}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.expireDate}}"><text class="info-label">有效期至</text><text class="info-value">{{drugInfo.expireDate}}</text></view>
+          <view class="info-row" wx:if="{{drugInfo.pkgAmount}}"><text class="info-label">包装数量</text><text class="info-value">{{drugInfo.pkgAmount}}</text></view>
+        </view>
+      </block>
+      <view class="drug-empty" wx:if="{{drugInfo.empty}}">
+        <text>未查询到该追溯码的药品信息</text>
       </view>
-      <text class="feature-name">扫码识别</text>
-      <text class="feature-desc">条码/二维码识别</text>
-    </view>
-
-    <view class="feature-card" bindtap="goToScan">
-      <view class="feature-icon history-icon">
-        <text class="icon-emoji">📋</text>
+      <view class="drug-error" wx:if="{{drugInfo.error}}">
+        <text>{{drugInfo.msg || '查询失败'}}</text>
       </view>
-      <text class="feature-name">扫码历史</text>
-      <text class="feature-desc">查看扫码记录</text>
     </view>
   </view>
 
-  <!-- 最近扫码记录 -->
-  <view class="recent-section" wx:if="{{recentHistory.length > 0}}">
+  <!-- QR 预览（自动更新） -->
+  <view class="preview-section" wx:if="{{codeImage}}">
+    <view class="preview-card">
+      <image class="preview-img {{codeType === 'barcode' ? 'preview-bar' : ''}}" src="{{codeImage}}" mode="{{codeType === 'barcode' ? 'widthFix' : 'aspectFit'}}" show-menu-by-longpress="{{true}}" />
+      <text class="preview-text" wx:if="{{codeType === 'qrcode'}}">{{inputText}}</text>
+    </view>
+    <view class="preview-actions">
+      <view class="act-btn act-primary" bindtap="saveImage">保存图片</view>
+      <view class="act-btn act-secondary" bindtap="copyText">复制文本</view>
+      <view class="act-btn act-ghost" bindtap="closePreview">收起</view>
+    </view>
+  </view>
+
+  <!-- 功能卡片（3个：Scan / History / Support） -->
+  <view class="feature-row">
+    <view class="feature-card" bindtap="goToScan">
+      <view class="feature-icon">
+        <image class="icon-svg" src="/images/icon-scan.svg" mode="aspectFit" />
+      </view>
+      <text class="feature-name">扫码</text>
+      <text class="feature-desc">扫描条码/二维码</text>
+    </view>
+    <view class="feature-card" bindtap="viewAllHistory">
+      <view class="feature-icon">
+        <image class="icon-svg" src="/images/icon-history.svg" mode="aspectFit" />
+      </view>
+      <text class="feature-name">历史</text>
+      <text class="feature-desc">查看生成记录</text>
+    </view>
+    <button class="feature-card feature-contact" open-type="contact" bindcontact="handleContact">
+      <view class="feature-icon">
+        <image class="icon-svg" src="/images/icon-contact.svg" mode="aspectFit" />
+      </view>
+      <text class="feature-name">客服</text>
+      <text class="feature-desc">在线咨询反馈</text>
+    </button>
+  </view>
+
+  <!-- 最近记录 -->
+  <view class="recent-section">
     <view class="section-header">
-      <text class="section-title">最近扫码</text>
-      <text class="section-more" bindtap="clearHistory">清空</text>
+      <text class="section-title">最近记录</text>
+      <text class="section-link" bindtap="viewAllHistory">全部</text>
     </view>
-    <view class="recent-list">
+    <view class="recent-list" wx:if="{{recentHistory.length > 0}}">
       <view class="recent-item" wx:for="{{recentHistory}}" wx:key="time" bindtap="onHistoryItemTap" data-value="{{item.value}}">
-        <view class="recent-left">
-          <text class="recent-type">{{item.type}}</text>
-          <text class="recent-value">{{item.value}}</text>
-        </view>
+        <text class="recent-tag {{item.source === 'scan' ? 'tag-scan' : 'tag-gen'}}">{{item.sourceLabel}}</text>
+        <text class="recent-value">{{item.value}}</text>
         <text class="recent-time">{{item.time}}</text>
       </view>
     </view>
-    <view class="view-all" bindtap="viewAllHistory">
-      <text>查看全部记录</text>
+    <view class="recent-empty" wx:else>
+      <text>暂无记录</text>
     </view>
   </view>
 </scroll-view>
+
+<!-- Canvas（必须在 scroll-view 外部） -->
+<canvas type="2d" id="qrcodeCanvas" style="position:fixed;left:-9999px;top:-9999px;width:260px;height:260px;"></canvas>
+<canvas type="2d" id="barcodeCanvas" style="position:fixed;left:-9999px;top:-9999px;width:340px;height:140px;"></canvas>
+
+<!-- 授权弹窗（fixed 定位，放在最外层） -->
+<view class="auth-mask" wx:if="{{showAvatarAuth}}" catchtouchmove="true">
+  <view class="auth-modal">
+    <view class="auth-header">
+      <text class="auth-title">完善个人信息</text>
+      <text class="auth-desc">用于展示你的身份信息</text>
+    </view>
+    <view class="auth-body">
+      <view class="auth-field">
+        <text class="auth-label">头像</text>
+        <button class="auth-avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image class="auth-avatar" wx:if="{{tempAvatarUrl}}" src="{{tempAvatarUrl}}" mode="aspectFill" />
+          <view class="auth-avatar-placeholder" wx:else><text>+</text></view>
+          <text class="auth-avatar-tip">{{tempAvatarUrl ? '更换' : '选择'}}</text>
+        </button>
+      </view>
+      <view class="auth-field">
+        <text class="auth-label">昵称</text>
+        <input class="auth-input" type="nickname" placeholder="请输入昵称" value="{{tempNickName}}" bindchange="onNickNameInput" />
+      </view>
+    </view>
+    <view class="auth-footer">
+      <button class="auth-cancel" bindtap="onCancelAuth">取消</button>
+      <button class="auth-confirm" bindtap="onConfirmAuth">确定</button>
+    </view>
+  </view>
+</view>

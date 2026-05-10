@@ -4,7 +4,7 @@ App({
     // 初始化云开发
     if (wx.cloud) {
       wx.cloud.init({
-        env: 'medtrac-7g3xl1uc4c208d21',  // 替换为你的云环境ID
+        env: 'cloud1-d8gp0p7d2f9b2ce45',
         traceUser: true
       })
     } else {
