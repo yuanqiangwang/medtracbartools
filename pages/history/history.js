@@ -128,6 +128,22 @@ Page({
     this.setData({ previewImage: '' })
   },
 
+  savePreviewImage() {
+    if (!this.data.previewImage) return
+    wx.saveImageToPhotosAlbum({
+      filePath: this.data.previewImage,
+      success: () => { wx.showToast({ title: '已保存', icon: 'success' }) },
+      fail: (err) => {
+        if (err.errMsg.includes('auth deny') || err.errMsg.includes('authorize')) {
+          wx.showModal({
+            title: '提示', content: '需要相册权限才能保存，是否前往设置？',
+            success: (res) => { if (res.confirm) wx.openSetting() }
+          })
+        }
+      }
+    })
+  },
+
   onCopyItem(e) {
     const text = e.currentTarget.dataset.text
     wx.setClipboardData({

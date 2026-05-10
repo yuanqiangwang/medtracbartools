@@ -143,7 +143,7 @@
       <text class="section-link" bindtap="viewAllHistory">全部</text>
     </view>
     <view class="recent-list" wx:if="{{recentHistory.length > 0}}">
-      <view class="recent-item" wx:for="{{recentHistory}}" wx:key="time" bindtap="onHistoryItemTap" data-value="{{item.value}}">
+      <view class="recent-item" wx:for="{{recentHistory}}" wx:key="time" bindtap="onHistoryItemTap" data-index="{{index}}">
         <text class="recent-tag {{item.source === 'scan' ? 'tag-scan' : 'tag-gen'}}">{{item.sourceLabel}}</text>
         <text class="recent-value">{{item.value}}</text>
         <text class="recent-time">{{item.time}}</text>
@@ -158,6 +158,16 @@
 <!-- Canvas（必须在 scroll-view 外部） -->
 <canvas type="2d" id="qrcodeCanvas" style="position:fixed;left:-9999px;top:-9999px;width:260px;height:260px;"></canvas>
 <canvas type="2d" id="barcodeCanvas" style="position:fixed;left:-9999px;top:-9999px;width:340px;height:140px;"></canvas>
+
+<!-- 首页码图预览 -->
+<view class="image-overlay" wx:if="{{previewImage}}" bindtap="closeImagePreview" catchtouchmove="true">
+  <image class="preview-fullscreen" src="{{previewImage}}" mode="widthFix" show-menu-by-longpress="{{true}}" catchtap="" />
+  <view class="preview-overlay-actions" catchtap="">
+    <view class="act-btn act-primary" catchtap="savePreviewImage">保存图片</view>
+    <view class="act-btn act-ghost" catchtap="closeImagePreview">关闭</view>
+  </view>
+  <view class="preview-hint">长按图片保存/分享</view>
+</view>
 
 <!-- 授权弹窗（fixed 定位，放在最外层） -->
 <view class="auth-mask" wx:if="{{showAvatarAuth}}" catchtouchmove="true">

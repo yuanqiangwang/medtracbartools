@@ -68,8 +68,12 @@
 
   <!-- 图片放大预览 -->
   <view class="image-overlay" wx:if="{{previewImage}}" bindtap="closePreview" catchtouchmove="true">
-    <image class="preview-fullscreen" src="{{previewImage}}" mode="aspectFit" />
-    <view class="preview-hint">点击任意位置关闭</view>
+    <image class="preview-fullscreen" src="{{previewImage}}" mode="widthFix" show-menu-by-longpress="{{true}}" catchtap="" />
+    <view class="preview-overlay-actions" catchtap="">
+      <view class="act-btn act-primary" catchtap="savePreviewImage">保存图片</view>
+      <view class="act-btn act-ghost" catchtap="closePreview">关闭</view>
+    </view>
+    <view class="preview-hint">长按图片保存/分享</view>
   </view>
 
   <!-- 底部操作 -->

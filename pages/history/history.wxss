@@ -245,6 +245,28 @@
   height: 18px;
 }
 
+/* ===== Action Buttons (preview overlay) ===== */
+.act-btn {
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.act-primary {
+  background: #5B6CFF;
+  color: #fff;
+}
+
+.act-ghost {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.7);
+}
+
+.act-btn:active {
+  opacity: 0.85;
+}
+
 /* ===== 图片放大预览 ===== */
 .image-overlay {
   position: fixed;
@@ -252,7 +274,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0,0,0,0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -262,14 +284,19 @@
 
 .preview-fullscreen {
   width: 80vw;
-  height: 80vw;
   border-radius: 8px;
 }
 
-.preview-hint {
-  color: rgba(255,255,255,0.5);
-  font-size: 13px;
+.preview-overlay-actions {
+  display: flex;
+  gap: 12px;
   margin-top: 24px;
+}
+
+.preview-hint {
+  color: rgba(255,255,255,0.35);
+  font-size: 11px;
+  margin-top: 16px;
 }
 
 /* ===== 底部操作 ===== */

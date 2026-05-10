@@ -19,7 +19,9 @@ Page({
     tempAvatarUrl: '',
     tempNickName: '',
     // 药品信息折叠
-    drugInfoCollapsed: false
+    drugInfoCollapsed: false,
+    // 首页码图预览
+    previewImage: ''
   },
 
   // 隐藏入口：连续点击标题5次进入管理后台
@@ -72,7 +74,8 @@ Page({
           sourceLabel: '生成码',
           type: item.typeLabel,
           time: item.time,
-          timestamp: item.timestamp
+          timestamp: item.timestamp,
+          imagePath: item.imagePath || ''
         })
       })
       all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
@@ -673,13 +676,37 @@ Page({
     }
   },
 
-  // 点击历史项 - 复制内容
+  // 点击历史项 - 生成码记录弹出预览，扫码记录复制内容
   onHistoryItemTap(e) {
-    const value = e.currentTarget.dataset.value
-    wx.setClipboardData({
-      data: value,
-      success: () => {
-        wx.showToast({ title: '已复制', icon: 'success' })
+    const index = e.currentTarget.dataset.index
+    const item = this.data.recentHistory[index]
+    if (!item) return
+    if (item.source === 'generate' && item.imagePath) {
+      this.setData({ previewImage: item.imagePath })
+    } else {
+      wx.setClipboardData({
+        data: item.value,
+        success: () => { wx.showToast({ title: '已复制', icon: 'success' }) }
+      })
+    }
+  },
+
+  closeImagePreview() {
+    this.setData({ previewImage: '' })
+  },
+
+  savePreviewImage() {
+    if (!this.data.previewImage) return
+    wx.saveImageToPhotosAlbum({
+      filePath: this.data.previewImage,
+      success: () => { wx.showToast({ title: '已保存', icon: 'success' }) },
+      fail: (err) => {
+        if (err.errMsg.includes('auth deny') || err.errMsg.includes('authorize')) {
+          wx.showModal({
+            title: '提示', content: '需要相册权限才能保存，是否前往设置？',
+            success: (res) => { if (res.confirm) wx.openSetting() }
+          })
+        }
       }
     })
   },
