@@ -1,0 +1,279 @@
+.container {
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20rpx 40rpx 40rpx;
+  box-sizing: border-box;
+}
+
+/* 顶部 */
+.header {
+  text-align: center;
+  padding: 20rpx 0 30rpx;
+}
+
+.app-name {
+  display: block;
+  font-size: 56rpx;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 4rpx;
+}
+
+.app-desc {
+  display: block;
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 12rpx;
+}
+
+/* 快速输入 */
+.quick-input-card {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 40rpx;
+  backdrop-filter: blur(10px);
+}
+
+.quick-input {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16rpx;
+  padding: 30rpx;
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+  width: 100%;
+  height: 100rpx;
+  box-sizing: border-box;
+  line-height: 100rpx;
+}
+
+.quick-btns {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 24rpx;
+}
+
+.quick-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 28rpx;
+  border-radius: 16rpx;
+  padding: 0;
+  border: none;
+}
+
+.qr-btn {
+  background: #fff;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.bar-btn {
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* 药品追溯码识别 */
+.drug-trace-info {
+  margin-top: 20rpx;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.25);
+}
+
+.drug-badge {
+  display: inline-block;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 6rpx 20rpx;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+}
+
+.drug-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.drug-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.drug-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+  min-width: 140rpx;
+}
+
+.drug-value {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  font-family: 'Courier New', monospace;
+}
+
+.drug-value.highlight {
+  color: #f1c40f;
+  background: rgba(241, 196, 15, 0.15);
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+/* 功能网格 */
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24rpx;
+  padding: 40rpx 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s;
+}
+
+.feature-card:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.feature-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+
+.qr-icon {
+  background: rgba(102, 126, 234, 0.3);
+}
+
+.bar-icon {
+  background: rgba(118, 75, 162, 0.3);
+}
+
+.scan-icon {
+  background: rgba(46, 204, 113, 0.3);
+}
+
+.history-icon {
+  background: rgba(241, 196, 15, 0.3);
+}
+
+.icon-emoji {
+  font-size: 44rpx;
+}
+
+.feature-name {
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.feature-desc {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* 最近扫码记录 */
+.recent-section {
+  margin-top: 40rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
+.section-more {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.recent-list {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.recent-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.08);
+}
+
+.recent-item:last-child {
+  border-bottom: none;
+}
+
+.recent-left {
+  flex: 1;
+  overflow: hidden;
+  margin-right: 16rpx;
+  min-width: 0;
+}
+
+.recent-type {
+  display: inline-block;
+  font-size: 20rpx;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  margin-bottom: 4rpx;
+}
+
+.recent-value {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-time {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.view-all {
+  text-align: center;
+  margin-top: 20rpx;
+  padding: 16rpx;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12rpx;
+}

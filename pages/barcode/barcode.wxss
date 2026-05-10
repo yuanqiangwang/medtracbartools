@@ -1,0 +1,279 @@
+/* pages/barcode/barcode.wxss */
+.page-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 48rpx;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 4rpx;
+}
+
+/* 类型选择 */
+.type-selector {
+  margin-bottom: 40rpx;
+}
+
+.type-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16rpx;
+  padding: 6rpx;
+}
+
+.type-tab {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx 0;
+  border-radius: 12rpx;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 30rpx;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.type-tab.active {
+  background: #ffffff;
+  color: #667eea;
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 输入区域 */
+.input-section {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 28rpx 28rpx 16rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.input-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.input-hint {
+  font-size: 22rpx;
+  color: #999;
+  font-weight: 400;
+  margin-left: 8rpx;
+}
+
+.content-input {
+  width: 100%;
+  min-height: 120rpx;
+  font-size: 28rpx;
+  color: #333;
+  line-height: 1.6;
+  padding: 16rpx;
+  background: #f5f6fa;
+  border-radius: 12rpx;
+  box-sizing: border-box;
+}
+
+.char-count {
+  text-align: right;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #bbb;
+}
+
+/* 生成按钮 */
+.btn-generate {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  border-radius: 16rpx;
+  padding: 28rpx 0;
+  text-align: center;
+  margin-bottom: 40rpx;
+  box-shadow: 0 8rpx 24rpx rgba(238, 90, 36, 0.4);
+}
+
+.btn-generate text {
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+}
+
+.btn-generate:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+/* 预览区域 */
+.preview-section {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.preview-card {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+}
+
+.preview-image {
+  width: 500rpx;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 28rpx;
+}
+
+.btn-action {
+  flex: 1;
+  border-radius: 12rpx;
+  padding: 22rpx 0;
+  text-align: center;
+}
+
+.btn-action text {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.btn-save {
+  background: #ffffff;
+}
+
+.btn-save text {
+  color: #667eea;
+}
+
+.btn-copy {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-copy text {
+  color: #ffffff;
+}
+
+.btn-action:active {
+  opacity: 0.8;
+}
+
+/* 隐藏 Canvas */
+.hidden-canvas {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+}
+
+/* 错误提示 */
+.error-toast {
+  position: fixed;
+  bottom: 120rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 20rpx 40rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+/* 生成历史 */
+.gen-history {
+  margin-top: 40rpx;
+}
+
+.gen-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.gen-history-title {
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
+.gen-history-clear {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.gen-history-list {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.gen-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.08);
+}
+
+.gen-history-item:last-child {
+  border-bottom: none;
+}
+
+.gen-history-left {
+  flex: 1;
+  overflow: hidden;
+  margin-right: 16rpx;
+  min-width: 0;
+}
+
+.gen-history-type {
+  display: inline-block;
+  font-size: 20rpx;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  margin-bottom: 4rpx;
+  color: #fff;
+}
+
+.gen-history-type.qrcode {
+  background: rgba(102, 126, 234, 0.5);
+}
+
+.gen-history-type.barcode {
+  background: rgba(118, 75, 162, 0.5);
+}
+
+.gen-history-text {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gen-history-time {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}

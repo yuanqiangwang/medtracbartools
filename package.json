@@ -1,0 +1,10 @@
+{
+  "name": "medtrac",
+  "version": "1.0.0",
+  "description": "MedTrac 条码生成工具",
+  "main": "app.js",
+  "dependencies": {
+    "weapp-qrcode-canvas-2d": "^1.1.3",
+    "wxbarcode": "^1.0.2"
+  }
+}

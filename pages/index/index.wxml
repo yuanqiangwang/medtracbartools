@@ -1,0 +1,87 @@
+<scroll-view scroll-y class="container">
+  <!-- 顶部 Logo 区域 -->
+  <view class="header">
+    <text class="app-name">MedTrac</text>
+    <text class="app-desc">条码 · 二维码 · 扫码工具</text>
+  </view>
+
+  <!-- 快速输入 -->
+  <view class="quick-input-card">
+    <input class="quick-input" placeholder="输入文本快速生成码图" value="{{inputText}}" bindinput="onInputChange" confirm-type="done" bindconfirm="quickGenerate" />
+
+    <!-- 药品追溯码识别 -->
+    <view class="drug-trace-info" wx:if="{{isDrugTrace}}">
+      <view class="drug-badge">药品追溯码</view>
+      <view class="drug-detail">
+        <view class="drug-detail-row">
+          <text class="drug-label">药品标识码</text>
+          <text class="drug-value highlight">{{drugIdCode}}</text>
+        </view>
+        <view class="drug-detail-row">
+          <text class="drug-label">序列号</text>
+          <text class="drug-value">{{drugSerialNo}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="quick-btns">
+      <button class="quick-btn qr-btn" bindtap="quickQR">二维码</button>
+      <button class="quick-btn bar-btn" bindtap="quickBar">条形码</button>
+    </view>
+  </view>
+
+  <!-- 功能入口 -->
+  <view class="feature-grid">
+    <view class="feature-card" bindtap="goToQRCode">
+      <view class="feature-icon qr-icon">
+        <text class="icon-emoji">▣</text>
+      </view>
+      <text class="feature-name">生成二维码</text>
+      <text class="feature-desc">输入文本/网址生成</text>
+    </view>
+
+    <view class="feature-card" bindtap="goToBarcode">
+      <view class="feature-icon bar-icon">
+        <text class="icon-emoji">║</text>
+      </view>
+      <text class="feature-name">生成条形码</text>
+      <text class="feature-desc">Code 128 编码</text>
+    </view>
+
+    <view class="feature-card" bindtap="goToScan">
+      <view class="feature-icon scan-icon">
+        <text class="icon-emoji">📷</text>
+      </view>
+      <text class="feature-name">扫码识别</text>
+      <text class="feature-desc">条码/二维码识别</text>
+    </view>
+
+    <view class="feature-card" bindtap="goToScan">
+      <view class="feature-icon history-icon">
+        <text class="icon-emoji">📋</text>
+      </view>
+      <text class="feature-name">扫码历史</text>
+      <text class="feature-desc">查看扫码记录</text>
+    </view>
+  </view>
+
+  <!-- 最近扫码记录 -->
+  <view class="recent-section" wx:if="{{recentHistory.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">最近扫码</text>
+      <text class="section-more" bindtap="clearHistory">清空</text>
+    </view>
+    <view class="recent-list">
+      <view class="recent-item" wx:for="{{recentHistory}}" wx:key="time" bindtap="onHistoryItemTap" data-value="{{item.value}}">
+        <view class="recent-left">
+          <text class="recent-type">{{item.type}}</text>
+          <text class="recent-value">{{item.value}}</text>
+        </view>
+        <text class="recent-time">{{item.time}}</text>
+      </view>
+    </view>
+    <view class="view-all" bindtap="viewAllHistory">
+      <text>查看全部记录</text>
+    </view>
+  </view>
+</scroll-view>

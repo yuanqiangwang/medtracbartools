@@ -1,0 +1,53 @@
+<view class="container">
+  <!-- 未登录/非管理员 -->
+  <view class="not-admin" wx:if="{{!isAdmin}}">
+    <text class="lock-icon">🔒</text>
+    <text class="not-admin-text">仅管理员可访问此页面</text>
+    <text class="openid-text" wx:if="{{myOpenid}}">你的 OpenID: {{myOpenid}}</text>
+    <text class="openid-hint" wx:if="{{myOpenid}}">将此 OpenID 填入云函数 ADMIN_OPENIDS 后重新部署即可</text>
+  </view>
+
+  <!-- 管理员界面 -->
+  <view class="admin-panel" wx:if="{{isAdmin}}">
+    <view class="admin-header">
+      <text class="admin-title">用户管理</text>
+      <text class="admin-count">共 {{users.length}} 位用户</text>
+    </view>
+
+    <!-- 加载中 -->
+    <view class="loading" wx:if="{{loading}}">
+      <view class="loading-spinner"></view>
+      <text>加载中...</text>
+    </view>
+
+    <!-- 用户列表 -->
+    <view class="user-list" wx:if="{{!loading}}">
+      <view class="user-card" wx:for="{{users}}" wx:key="openid">
+        <view class="user-info">
+          <view class="user-top-row">
+            <image class="user-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" wx:if="{{item.avatarUrl}}"></image>
+            <view class="user-avatar-placeholder" wx:else></view>
+            <view class="user-text-info">
+              <text class="user-nickname">{{item.nickName || '未填写'}}</text>
+              <text class="user-openid">{{item.openid}}</text>
+            </view>
+          </view>
+          <view class="user-meta">
+            <text class="meta-item">查询 {{item.totalUsed}} 次</text>
+            <text class="meta-item">最近 {{item.lastDate}}</text>
+            <text class="vip-badge" wx:if="{{item.isVip}}">VIP</text>
+          </view>
+        </view>
+        <view class="user-actions">
+          <button class="action-btn add-vip-btn" wx:if="{{!item.isVip}}" bindtap="addVip" data-openid="{{item.openid}}">设为VIP</button>
+          <button class="action-btn remove-vip-btn" wx:if="{{item.isVip}}" bindtap="removeVip" data-openid="{{item.openid}}">取消VIP</button>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view class="empty-state" wx:if="{{users.length === 0}}">
+        <text>暂无用户数据</text>
+      </view>
+    </view>
+  </view>
+</view>

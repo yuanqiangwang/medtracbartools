@@ -1,0 +1,74 @@
+<view class="page">
+  <!-- Tab 切换 -->
+  <view class="tab-bar">
+    <view class="tab-item {{activeTab === 'generate' ? 'tab-active' : ''}}" bindtap="switchTab" data-tab="generate">
+      <text class="tab-text">生成记录</text>
+      <view class="tab-indicator" wx:if="{{activeTab === 'generate'}}"></view>
+    </view>
+    <view class="tab-item {{activeTab === 'scan' ? 'tab-active' : ''}}" bindtap="switchTab" data-tab="scan">
+      <text class="tab-text">扫码记录</text>
+      <view class="tab-indicator" wx:if="{{activeTab === 'scan'}}"></view>
+    </view>
+  </view>
+
+  <!-- 生成记录列表 -->
+  <scroll-view scroll-y class="list-area" wx:if="{{activeTab === 'generate'}}">
+    <view class="empty-state" wx:if="{{generateList.length === 0}}">
+      <view class="empty-icon-wrap icon-gen-empty"></view>
+      <text class="empty-title">暂无生成记录</text>
+      <text class="empty-hint">生成条码或二维码后会自动保存到这里</text>
+    </view>
+    <view class="card" wx:for="{{generateList}}" wx:key="id" bindtap="onCardTap" data-item="{{item}}" data-type="generate">
+      <view class="card-preview" catchtap="onPreviewImage" data-src="{{item.imagePath}}">
+        <image class="card-preview-img {{item.codeType === 'barcode' ? 'barcode-preview' : ''}}" src="{{item.imagePath}}" mode="aspectFit" />
+      </view>
+      <view class="card-info">
+        <view class="card-type-row">
+          <text class="card-type-tag {{item.codeType === 'qrcode' ? 'tag-qr' : 'tag-bar'}}">{{item.codeType === 'qrcode' ? '二维码' : '条形码'}}</text>
+          <text class="card-time">{{item.timeStr}}</text>
+        </view>
+        <text class="card-content">{{item.content}}</text>
+      </view>
+      <view class="card-action" catchtap="onCopyContent" data-content="{{item.content}}">
+        <view class="action-icon icon-copy-sm"></view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 扫码记录列表 -->
+  <scroll-view scroll-y class="list-area" wx:if="{{activeTab === 'scan'}}">
+    <view class="empty-state" wx:if="{{scanList.length === 0}}">
+      <view class="empty-icon-wrap icon-scan-empty"></view>
+      <text class="empty-title">暂无扫码记录</text>
+      <text class="empty-hint">扫码识别后会自动保存到这里</text>
+    </view>
+    <view class="card" wx:for="{{scanList}}" wx:key="id" bindtap="onCardTap" data-item="{{item}}" data-type="scan">
+      <view class="card-preview card-preview-scan">
+        <view class="scan-type-icon {{item.scanType === 'QR_CODE' ? 'icon-qr-sm' : 'icon-bar-sm'}}"></view>
+      </view>
+      <view class="card-info">
+        <view class="card-type-row">
+          <text class="card-type-tag {{item.scanType === 'QR_CODE' ? 'tag-qr' : 'tag-bar'}}">{{item.scanType === 'QR_CODE' ? '二维码' : '条形码'}}</text>
+          <text class="card-time">{{item.timeStr}}</text>
+        </view>
+        <text class="card-content">{{item.content}}</text>
+      </view>
+      <view class="card-action" catchtap="onCopyContent" data-content="{{item.content}}">
+        <view class="action-icon icon-copy-sm"></view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar" wx:if="{{(activeTab === 'generate' && generateList.length > 0) || (activeTab === 'scan' && scanList.length > 0)}}">
+    <view class="bottom-btn btn-clear" bindtap="onClearHistory">
+      <text>清空记录</text>
+    </view>
+  </view>
+
+  <!-- 图片放大预览 -->
+  <view class="preview-mask" wx:if="{{previewSrc}}" bindtap="closePreview" catchtouchmove="true">
+    <image class="preview-full-img" src="{{previewSrc}}" mode="aspectFit" />
+    <view class="preview-close-tip">点击任意位置关闭</view>
+  </view>
+</view>

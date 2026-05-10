@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "openapi": []
+  },
+  "envVariables": {
+    "TOP_APPKEY": "35009027",
+    "TOP_APPSECRET": "005601a111b9fd8f1fe6dc96b25a4457",
+    "DEFAULT_REF_ENT_ID": "2566d67354f546f69b917d8ea7a5dc19"
+  }
+}
