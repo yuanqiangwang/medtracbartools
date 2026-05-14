@@ -118,25 +118,13 @@ Page({
   onInputChange(e) {
     const text = e.detail.value
     const info = this.parseDrugTrace(text.trim())
-    // 只在文本真正变化时更新状态
+    // 只更新输入文本和解析结果，不触发预览
     if (text !== this.data.inputText) {
       this.setData({
         inputText: text,
         ...info
       })
     }
-    // 防抖即时预览（400ms）
-    if (this._previewTimer) clearTimeout(this._previewTimer)
-    if (!text.trim()) {
-      this.setData({ previewText: '', codeImage: '', isGeneratingPreview: false })
-      return
-    }
-    this._previewTimer = setTimeout(() => {
-      // 只有文本变化了才重新生成
-      if (text.trim() !== this.data.previewText) {
-        this.previewCode(false)
-      }
-    }, 400)
   },
 
   copyInputText() {
@@ -182,12 +170,21 @@ Page({
   switchCodeType(e) {
     const type = e.currentTarget.dataset.type
     if (type === this.data.codeType) return
-    // 切换类型时清空旧图片，重新生成
+    const text = this.data.inputText.trim()
+    // 切换类型时清空旧图片
     this.setData({ codeType: type, codeImage: '', previewText: '' })
     this._lastPreviewText = ''
-    // 如果已有输入内容，切换后自动重新预览（不需要保存历史）
-    if (this.data.inputText.trim()) {
-      this.previewCode(false)
+    // 如果已有输入内容，切换后自动生成并保存历史
+    if (text) {
+      if (type === 'qrcode') {
+        this.previewQR(() => {
+          this.saveToHistory(text, 'qrcode', this.data.codeImage)
+        })
+      } else {
+        this.previewBar(() => {
+          this.saveToHistory(text, 'barcode', this.data.codeImage)
+        })
+      }
     }
   },
 
@@ -228,9 +225,11 @@ Page({
     // 标记生成状态，显示加载效果（不清空旧图片）
     this.setData({ isGeneratingPreview: true, previewText: text })
 
-    // 如果内容没变且已有图片，不重新生成
+    // 如果内容没变且已有图片，不重新生成，但如果有回调仍需触发
     if (this._lastPreviewText === text && this.data.codeImage) {
-      this.setData({ isGeneratingPreview: false })
+      this.setData({ isGeneratingPreview: false }, () => {
+        if (onComplete) onComplete()
+      })
       return
     }
     this._lastPreviewText = text
@@ -289,9 +288,11 @@ Page({
     // 标记生成状态，显示加载效果（不清空旧图片）
     this.setData({ isGeneratingPreview: true, previewText: text })
 
-    // 如果内容没变且已有图片，不重新生成
+    // 如果内容没变且已有图片，不重新生成，但如果有回调仍需触发
     if (this._lastPreviewText === text && this.data.codeImage) {
-      this.setData({ isGeneratingPreview: false })
+      this.setData({ isGeneratingPreview: false }, () => {
+        if (onComplete) onComplete()
+      })
       return
     }
     this._lastPreviewText = text
@@ -626,10 +627,6 @@ Page({
     } else {
       doSave('')
     }
-  },
-
-  handleContact(e) {
-    console.log('客服会话', e.detail)
   },
 
   // Code 128 编码

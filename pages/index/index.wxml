@@ -150,13 +150,6 @@
       <text class="feature-name">历史</text>
       <text class="feature-desc">查看生成记录</text>
     </view>
-    <button class="feature-card feature-contact" open-type="contact" bindcontact="handleContact">
-      <view class="feature-icon">
-        <image class="icon-svg" src="/images/icon-contact.svg" mode="aspectFit" />
-      </view>
-      <text class="feature-name">客服</text>
-      <text class="feature-desc">在线咨询反馈</text>
-    </button>
   </view>
 
   <!-- 最近记录 -->

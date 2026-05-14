@@ -40,6 +40,10 @@
   height: 16px;
 }
 
+.tab-active .tab-icon {
+  filter: brightness(0) invert(1);
+}
+
 /* ===== 搜索栏 ===== */
 .search-bar {
   display: flex;
