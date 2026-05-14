@@ -1,7 +1,14 @@
+<!-- 公告悬浮区（固定置顶） -->
+<view class="announcement-bar" wx:if="{{showAnnouncement && announcement}}">
+  <image class="announcement-icon" src="/images/icon-announcement.svg" mode="aspectFit" />
+  <text class="announcement-text">{{announcement}}</text>
+</view>
+
 <scroll-view scroll-y class="container">
   <!-- Header -->
   <view class="header">
-    <text class="header-title" bindtap="onHeaderTap">MedTrac</text>
+    <text class="header-title" bindtap="onHeaderTap">游游制码</text>
+    <text class="header-subtitle"> · 扫码 · 生成 · 识别</text>
   </view>
 
   <!-- 输入 + 码类型 -->
@@ -25,11 +32,11 @@
     <view class="type-tabs">
       <view class="tab {{codeType === 'barcode' ? 'tab-active' : ''}}" bindtap="switchCodeType" data-type="barcode">
         <image class="tab-icon" src="/images/icon-bar.svg" mode="aspectFit" />
-        <text>Barcode</text>
+        <text>条形码</text>
       </view>
       <view class="tab {{codeType === 'qrcode' ? 'tab-active' : ''}}" bindtap="switchCodeType" data-type="qrcode">
         <image class="tab-icon" src="/images/icon-qr.svg" mode="aspectFit" />
-        <text>QR Code</text>
+        <text>二维码</text>
       </view>
     </view>
   </view>
@@ -98,15 +105,31 @@
     </view>
   </view>
 
-  <!-- QR 预览（自动更新） -->
-  <view class="preview-section" wx:if="{{codeImage}}">
+  <!-- QR/条码预览（优化：始终渲染，避免闪烁） -->
+  <view class="preview-section" wx:if="{{previewText || codeImage}}">
     <view class="preview-card">
-      <image class="preview-img {{codeType === 'barcode' ? 'preview-bar' : ''}}" src="{{codeImage}}" mode="{{codeType === 'barcode' ? 'widthFix' : 'aspectFit'}}" show-menu-by-longpress="{{true}}" />
-      <text class="preview-text" wx:if="{{codeType === 'qrcode'}}">{{inputText}}</text>
+      <!-- 生成中状态 -->
+      <view class="preview-loading" wx:if="{{isGeneratingPreview && !codeImage}}">
+        <view class="preview-spinner"></view>
+        <text class="preview-loading-text">生成中...</text>
+      </view>
+      <!-- 有图片时显示 -->
+      <image
+        wx:if="{{codeImage}}"
+        class="preview-img {{codeType === 'barcode' ? 'preview-bar' : ''}} {{isGeneratingPreview ? 'preview-fading' : ''}}"
+        src="{{codeImage}}"
+        mode="{{codeType === 'barcode' ? 'widthFix' : 'aspectFit'}}"
+        show-menu-by-longpress="{{true}}"
+      />
+      <!-- 生成中但有旧图片时的覆盖层 -->
+      <view class="preview-generating-overlay" wx:if="{{isGeneratingPreview && codeImage}}">
+        <view class="preview-spinner-small"></view>
+      </view>
+      <text class="preview-text" wx:if="{{codeType === 'qrcode' && previewText}}">{{previewText}}</text>
     </view>
     <view class="preview-actions">
-      <view class="act-btn act-primary" bindtap="saveImage">保存图片</view>
-      <view class="act-btn act-secondary" bindtap="copyText">复制文本</view>
+      <view class="act-btn act-primary" bindtap="saveImage" wx:if="{{codeImage}}">保存图片</view>
+      <view class="act-btn act-secondary" bindtap="copyText" wx:if="{{previewText}}">复制文本</view>
       <view class="act-btn act-ghost" bindtap="closePreview">收起</view>
     </view>
   </view>
@@ -145,7 +168,10 @@
     <view class="recent-list" wx:if="{{recentHistory.length > 0}}">
       <view class="recent-item" wx:for="{{recentHistory}}" wx:key="time" bindtap="onHistoryItemTap" data-index="{{index}}">
         <text class="recent-tag {{item.source === 'scan' ? 'tag-scan' : 'tag-gen'}}">{{item.sourceLabel}}</text>
+        <text class="recent-tag {{item.type === 'qrcode' ? 'tag-qr' : 'tag-bar'}}">{{item.typeLabel}}</text>
+        <text class="recent-tag tag-gs1" wx:if="{{item.isGS1}}">GS1</text>
         <text class="recent-value">{{item.value}}</text>
+        <text class="recent-length">{{item.length}}</text>
         <text class="recent-time">{{item.time}}</text>
       </view>
     </view>

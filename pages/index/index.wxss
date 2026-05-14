@@ -8,19 +8,54 @@
   height: 100vh;
   background: #F7F8FA;
   padding: 0 16px 32px;
+  padding-top: calc(52px + env(safe-area-inset-top));
   box-sizing: border-box;
 }
 
-/* ===== Header (title only) ===== */
+/* ===== Announcement Bar (Fixed Top) ===== */
+.announcement-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.announcement-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.announcement-text {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Header (title + subtitle) ===== */
 .header {
-  padding: 24px 0 0;
+  padding: 16px 0 0;
 }
 
 .header-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: #111;
-  letter-spacing: 1px;
+}
+
+.header-subtitle {
+  font-size: 12px;
+  color: #999;
 }
 
 /* ===== Input Section ===== */
@@ -81,6 +116,7 @@
   opacity: 0.4;
 }
 
+/* ===== Generate Button ===== */
 .btn-generate {
   flex-shrink: 0;
   width: 48px;
@@ -368,7 +404,7 @@
   color: #999;
 }
 
-/* ===== QR Preview (auto update) ===== */
+/* ===== QR/条码 Preview (优化渲染) ===== */
 .preview-section {
   margin-top: 24px;
 }
@@ -381,16 +417,69 @@
   flex-direction: column;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  min-height: 200px;
+  position: relative;
 }
 
+/* 加载中状态 */
+.preview-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  width: 100%;
+}
+
+.preview-loading-text {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #999;
+}
+
+.preview-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #E8E9FF;
+  border-top-color: #5B6CFF;
+  border-radius: 50%;
+  animation: previewSpin 0.8s linear infinite;
+}
+
+.preview-spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(91,108,255,0.3);
+  border-top-color: #5B6CFF;
+  border-radius: 50%;
+  animation: previewSpin 0.6s linear infinite;
+}
+
+@keyframes previewSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* 生成中覆盖层 */
+.preview-generating-overlay {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+}
+
+/* 图片过渡效果 */
 .preview-img {
   width: 200px;
   height: 200px;
+  transition: opacity 0.2s ease;
 }
 
 .preview-img.preview-bar {
   width: 100%;
   height: auto;
+}
+
+.preview-img.preview-fading {
+  opacity: 0.7;
 }
 
 .preview-text {
@@ -574,6 +663,34 @@
   color: #5B6CFF;
 }
 
+.tag-bar {
+  background: rgba(91,108,255,0.08);
+  color: #5B6CFF;
+}
+
+.tag-qr {
+  background: rgba(82,196,26,0.08);
+  color: #52C41A;
+}
+
+.tag-gs1 {
+  background: rgba(255,153,0,0.1);
+  color: #FF9900;
+}
+
+.gs-char {
+  font-size: 10px;
+  color: #FF9900;
+  background: rgba(255,153,0,0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin: 0 1px;
+}
+
+.recent-value-wrap {
+  display: inline;
+}
+
 .recent-value {
   flex: 1;
   font-size: 13px;
@@ -587,6 +704,15 @@
 .recent-time {
   font-size: 11px;
   color: #999;
+  flex-shrink: 0;
+}
+
+.recent-length {
+  font-size: 10px;
+  color: #999;
+  background: #F0F1F3;
+  padding: 1px 6px;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 

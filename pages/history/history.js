@@ -12,6 +12,22 @@ Page({
     this.loadHistory()
   },
 
+  // 解析 GS 分隔符为显示部分
+  _parseGsDisplayParts(value) {
+    const parts = []
+    const gsChar = '\x1D'
+    if (!value.includes(gsChar)) {
+      parts.push({ text: value, isGs: false })
+      return parts
+    }
+    const segments = value.split(gsChar)
+    segments.forEach((seg, i) => {
+      if (seg) parts.push({ text: seg, isGs: false })
+      if (i < segments.length - 1) parts.push({ text: 'gs', isGs: true })
+    })
+    return parts
+  },
+
   onShow() {
     this.loadHistory()
   },
@@ -34,12 +50,15 @@ Page({
 
       // 扫码记录
       scanHistory.forEach(item => {
+        const displayParts = item.displayParts || this._parseGsDisplayParts(item.value)
         all.push({
           ...item,
           source: 'scan',
           sourceLabel: '扫码',
           type: item.type === '条形码' ? 'barcode' : 'qrcode',
           typeLabel: item.type,
+          isGS1: item.isGS1,
+          displayParts,
           id: 'scan_' + item.timestamp + '_' + item.value,
           text: item.value,
           imagePath: item.imagePath || ''

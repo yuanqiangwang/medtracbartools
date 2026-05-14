@@ -216,6 +216,29 @@
   color: #34C759;
 }
 
+.item-gs1-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  background: rgba(255,153,0,0.1);
+  color: #FF9900;
+}
+
+.item-text-wrap {
+  display: inline;
+  word-break: break-all;
+}
+
+.item-gs-inline {
+  font-size: 10px;
+  color: #FF9900;
+  background: rgba(255,153,0,0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin: 0 1px;
+}
+
 .item-time {
   font-size: 12px;
   color: #999;

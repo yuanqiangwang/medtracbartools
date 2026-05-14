@@ -6,7 +6,13 @@ Page({
     drugSerialNo: '',
     recentHistory: [],
     codeType: 'barcode', // 'barcode' | 'qrcode'
-    codeImage: '',
+    // 预览优化：分离状态
+    codeImage: '',          // 当前显示的图片
+    previewText: '',        // 当前预览的文本
+    isGeneratingPreview: false,  // 是否正在生成预览
+    // 公告
+    showAnnouncement: true,
+    announcement: '欢迎使用游游制码！如有问题请联系客服',
     // 药品查询
     drugInfo: null,
     drugLoading: false,
@@ -40,7 +46,24 @@ Page({
     }
   },
 
+  // 关闭公告
+  closeAnnouncement(e) {
+    e.stopPropagation()
+    this.setData({ showAnnouncement: false })
+    wx.setStorageSync('announcement_closed', true)
+  },
+
+  // 点击公告
+  onAnnouncementTap() {
+    // 可以在这里添加点击公告后的操作，如打开公告详情页面
+  },
+
   onLoad() {
+    // 检查公告是否已关闭
+    const announcementClosed = wx.getStorageSync('announcement_closed')
+    if (announcementClosed) {
+      this.setData({ showAnnouncement: false })
+    }
     this.loadHistory()
     this.checkLoginAndQuota()
   },
@@ -58,11 +81,16 @@ Page({
       const genHistory = wx.getStorageSync('gen_history') || []
       const all = []
       scanHistory.forEach(item => {
+        const displayParts = item.displayParts || this._parseGsDisplayParts(item.value)
         all.push({
           value: item.value,
+          displayParts,
           source: 'scan',
           sourceLabel: '扫码',
-          type: item.type,
+          type: item.type === '二维码' ? 'qrcode' : 'barcode',
+          typeLabel: item.typeLabel || item.type,
+          isGS1: item.isGS1,
+          length: item.value.length,
           time: item.time,
           timestamp: item.timestamp
         })
@@ -72,7 +100,9 @@ Page({
           value: item.text,
           source: 'generate',
           sourceLabel: '生成码',
-          type: item.typeLabel,
+          type: item.type,
+          typeLabel: item.typeLabel,
+          length: item.text.length,
           time: item.time,
           timestamp: item.timestamp,
           imagePath: item.imagePath || ''
@@ -88,18 +118,24 @@ Page({
   onInputChange(e) {
     const text = e.detail.value
     const info = this.parseDrugTrace(text.trim())
-    this.setData({
-      inputText: text,
-      ...info
-    })
-    // 防抖即时生成
-    if (this._generateTimer) clearTimeout(this._generateTimer)
+    // 只在文本真正变化时更新状态
+    if (text !== this.data.inputText) {
+      this.setData({
+        inputText: text,
+        ...info
+      })
+    }
+    // 防抖即时预览（400ms）
+    if (this._previewTimer) clearTimeout(this._previewTimer)
     if (!text.trim()) {
-      this.setData({ codeImage: '' })
+      this.setData({ previewText: '', codeImage: '', isGeneratingPreview: false })
       return
     }
-    this._generateTimer = setTimeout(() => {
-      this.generateCode()
+    this._previewTimer = setTimeout(() => {
+      // 只有文本变化了才重新生成
+      if (text.trim() !== this.data.previewText) {
+        this.previewCode(false)
+      }
     }, 400)
   },
 
@@ -109,7 +145,17 @@ Page({
   },
 
   clearInputText() {
-    this.setData({ inputText: '', codeImage: '', isDrugTrace: false, drugIdCode: '', drugSerialNo: '', drugInfo: null })
+    this.setData({
+      inputText: '',
+      codeImage: '',
+      previewText: '',
+      isDrugTrace: false,
+      drugIdCode: '',
+      drugSerialNo: '',
+      drugInfo: null,
+      isGeneratingPreview: false
+    })
+    this._lastPreviewText = ''
   },
 
   toggleDrugInfo() {
@@ -136,38 +182,69 @@ Page({
   switchCodeType(e) {
     const type = e.currentTarget.dataset.type
     if (type === this.data.codeType) return
-    this.setData({ codeType: type, codeImage: '' })
-    // 如果已有输入内容，切换后自动重新生成
+    // 切换类型时清空旧图片，重新生成
+    this.setData({ codeType: type, codeImage: '', previewText: '' })
+    this._lastPreviewText = ''
+    // 如果已有输入内容，切换后自动重新预览（不需要保存历史）
     if (this.data.inputText.trim()) {
-      this.generateCode()
+      this.previewCode(false)
     }
   },
 
+  // 显式生成并保存到历史
   quickGenerate() {
-    this.generateCode()
-  },
-
-  generateCode() {
-    if (this.data.codeType === 'qrcode') {
-      this.generateQR()
-    } else {
-      this.generateBar()
-    }
-  },
-
-  generateQR() {
     const text = this.data.inputText.trim()
     if (!text) {
       wx.showToast({ title: '请输入内容', icon: 'none' })
       return
     }
-    this.setData({ codeImage: '' })
+    // 设置预览文本，确保显示
+    this.setData({ previewText: text })
+    if (this.data.codeType === 'qrcode') {
+      this.previewQR(() => {
+        this.saveToHistory(text, this.data.codeType, this.data.codeImage)
+      })
+    } else {
+      this.previewBar(() => {
+        this.saveToHistory(text, this.data.codeType, this.data.codeImage)
+      })
+    }
+  },
+
+  // 预览（不保存历史）
+  previewCode(needSaveHistory) {
+    if (this.data.codeType === 'qrcode') {
+      this.previewQR(null, needSaveHistory)
+    } else {
+      this.previewBar(null, needSaveHistory)
+    }
+  },
+
+  // 预览二维码（不保存历史）
+  previewQR(onComplete) {
+    const text = this.data.inputText.trim()
+    if (!text) return
+
+    // 标记生成状态，显示加载效果（不清空旧图片）
+    this.setData({ isGeneratingPreview: true, previewText: text })
+
+    // 如果内容没变且已有图片，不重新生成
+    if (this._lastPreviewText === text && this.data.codeImage) {
+      this.setData({ isGeneratingPreview: false })
+      return
+    }
+    this._lastPreviewText = text
+
     const query = wx.createSelectorQuery()
     query.select('#qrcodeCanvas')
       .fields({ node: true, size: true })
       .exec(async (res) => {
         try {
-          if (!res[0]) { wx.showToast({ title: '生成失败', icon: 'none' }); return }
+          if (!res[0]) {
+            this.setData({ isGeneratingPreview: false })
+            wx.showToast({ title: '生成失败', icon: 'none' })
+            return
+          }
           const canvas = res[0].node
           const drawQrcode = require('weapp-qrcode-canvas-2d')
           await drawQrcode({
@@ -179,34 +256,56 @@ Page({
           wx.canvasToTempFilePath({
             canvas, x: 0, y: 0, width: 260, height: 260, destWidth: 780, destHeight: 780,
             success: (res) => {
-              this.setData({ codeImage: res.tempFilePath })
-              this.saveToHistory(text, 'qrcode', res.tempFilePath)
+              // 检查是否被取消或文本已变化
+              if (this.data.previewText === text) {
+                this.setData({ codeImage: res.tempFilePath, isGeneratingPreview: false }, () => {
+                  if (onComplete) onComplete()
+                })
+              }
             },
-            fail: () => { wx.showToast({ title: '导出失败', icon: 'none' }) }
+            fail: () => {
+              this.setData({ isGeneratingPreview: false })
+              wx.showToast({ title: '导出失败', icon: 'none' })
+            }
           })
         } catch (e) {
+          this.setData({ isGeneratingPreview: false })
           wx.showToast({ title: '二维码生成失败', icon: 'none' })
         }
       })
   },
 
-  generateBar() {
+  // 预览条形码（不保存历史）
+  previewBar(onComplete) {
     const text = this.data.inputText.trim()
-    if (!text) {
-      wx.showToast({ title: '请输入内容', icon: 'none' })
-      return
-    }
+    if (!text) return
+
     if (!/^[\x00-\x7F]+$/.test(text)) {
       wx.showToast({ title: '条形码仅支持英文数字符号', icon: 'none' })
+      this.setData({ isGeneratingPreview: false })
       return
     }
-    this.setData({ codeImage: '' })
+
+    // 标记生成状态，显示加载效果（不清空旧图片）
+    this.setData({ isGeneratingPreview: true, previewText: text })
+
+    // 如果内容没变且已有图片，不重新生成
+    if (this._lastPreviewText === text && this.data.codeImage) {
+      this.setData({ isGeneratingPreview: false })
+      return
+    }
+    this._lastPreviewText = text
+
     const query = wx.createSelectorQuery()
     query.select('#barcodeCanvas')
       .fields({ node: true, size: true })
       .exec((res) => {
         try {
-          if (!res[0]) { wx.showToast({ title: '生成失败', icon: 'none' }); return }
+          if (!res[0]) {
+            this.setData({ isGeneratingPreview: false })
+            wx.showToast({ title: '生成失败', icon: 'none' })
+            return
+          }
           const canvas = res[0].node
           const dpr = wx.getWindowInfo().pixelRatio
 
@@ -257,12 +356,21 @@ Page({
             width: w, height: h,
             destWidth: w * dpr, destHeight: h * dpr,
             success: (r) => {
-              this.setData({ codeImage: r.tempFilePath })
-              this.saveToHistory(text, 'barcode', r.tempFilePath)
+              // 检查是否被取消或文本已变化
+              if (this.data.previewText === text) {
+                this.setData({ codeImage: r.tempFilePath, isGeneratingPreview: false }, () => {
+                  if (onComplete) onComplete()
+                })
+              }
             },
-            fail: (err) => { console.error('条形码导出失败:', err); wx.showToast({ title: '导出失败', icon: 'none' }) }
+            fail: (err) => {
+              this.setData({ isGeneratingPreview: false })
+              console.error('条形码导出失败:', err)
+              wx.showToast({ title: '导出失败', icon: 'none' })
+            }
           })
         } catch (e) {
+          this.setData({ isGeneratingPreview: false })
           console.error('条形码生成失败', e)
           wx.showToast({ title: '条形码生成失败', icon: 'none' })
         }
@@ -270,11 +378,14 @@ Page({
   },
 
   closePreview() {
-    this.setData({ codeImage: '' })
+    this.setData({ codeImage: '', previewText: '', isGeneratingPreview: false })
+    this._lastPreviewText = ''
   },
 
   saveImage() {
     if (!this.data.codeImage) return
+    // 保存时写入历史
+    this.saveToHistory(this.data.inputText.trim(), this.data.codeType, this.data.codeImage)
     wx.saveImageToPhotosAlbum({
       filePath: this.data.codeImage,
       success: () => { wx.showToast({ title: '已保存', icon: 'success' }) },
@@ -291,6 +402,8 @@ Page({
 
   copyText() {
     if (!this.data.inputText) return
+    // 复制时写入历史
+    this.saveToHistory(this.data.inputText.trim(), this.data.codeType, this.data.codeImage)
     wx.setClipboardData({ data: this.data.inputText, success: () => { wx.showToast({ title: '已复制', icon: 'success' }) } })
   },
 
@@ -612,11 +725,19 @@ Page({
         const info = this.parseDrugTrace(result.trim())
         // 根据扫码类型设置码类型
         const isQR = res.scanType === 'QR_CODE' || res.scanType === 'DATA_MATRIX' || res.scanType === 'PDF_417'
-        this.setData({ inputText: result, drugInfo: null, codeType: isQR ? 'qrcode' : 'barcode', codeImage: '', ...info })
-        // 保存扫码历史
+        this.setData({
+          inputText: result,
+          drugInfo: null,
+          codeType: isQR ? 'qrcode' : 'barcode',
+          codeImage: '',
+          previewText: '',
+          ...info
+        })
+        this._lastPreviewText = ''
+        // 保存扫码历史（保留原始结果）
         this.saveScanHistory(result, res.scanType)
-        // 自动生成码预览
-        this.generateCode()
+        // 扫码后生成预览（不需要保存历史）
+        this.previewCode(false)
       },
       fail: (err) => {
         if (err.errMsg && err.errMsg.indexOf('cancel') === -1) {
@@ -626,26 +747,43 @@ Page({
     })
   },
 
+  // 保存到历史（带去重：如果已存在则更新timestamp）
   saveToHistory(text, type, imagePath) {
+    if (!text) return
     try {
       let genHistory = wx.getStorageSync('gen_history') || []
       const now = new Date()
       const timestamp = now.getTime()
       const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
       const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
-      // 去重
-      genHistory = genHistory.filter(item => !(item.text === text && item.type === type))
-      genHistory.unshift({
-        text,
-        type,
-        typeLabel: type === 'qrcode' ? '二维码' : '条形码',
-        time: timeStr,
-        date,
-        timestamp,
-        imagePath: imagePath || ''
-      })
+      
+      // 检查是否已存在（相同内容+相同类型）
+      const existingIndex = genHistory.findIndex(item => item.text === text && item.type === type)
+      if (existingIndex !== -1) {
+        // 存在则更新时间戳移到最前
+        const existing = genHistory.splice(existingIndex, 1)[0]
+        existing.timestamp = timestamp
+        existing.time = timeStr
+        existing.date = date
+        existing.imagePath = imagePath || existing.imagePath
+        genHistory.unshift(existing)
+      } else {
+        // 不存在则新增
+        genHistory.unshift({
+          text,
+          type,
+          typeLabel: type === 'qrcode' ? '二维码' : '条形码',
+          time: timeStr,
+          date,
+          timestamp,
+          imagePath: imagePath || ''
+        })
+      }
+      
       if (genHistory.length > 100) genHistory = genHistory.slice(0, 100)
       wx.setStorageSync('gen_history', genHistory)
+      // 刷新最近记录
+      this.loadHistory()
     } catch (e) {
       console.error('保存生成历史失败', e)
     }
@@ -659,11 +797,18 @@ Page({
       const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
       const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`
       const type = (scanType === 'QR_CODE' || scanType === 'DATA_MATRIX' || scanType === 'PDF_417') ? '二维码' : '条形码'
+      // 检测 GS1 前缀
+      const isGS1 = value.charCodeAt(0) === 29 || value.startsWith(']C1') || value.startsWith(']d')
+      // 将 GS 分隔符转换为显示用的部分
+      const displayParts = this._parseGsDisplayParts(value)
       // 去重
       scanHistory = scanHistory.filter(item => !(item.value === value && item.type === type))
       scanHistory.unshift({
         value,
+        displayParts,
         type,
+        typeLabel: type,
+        isGS1,
         time: timeStr,
         date,
         timestamp
@@ -674,6 +819,22 @@ Page({
     } catch (e) {
       console.error('保存扫码历史失败', e)
     }
+  },
+
+  // 解析 GS 分隔符为显示部分
+  _parseGsDisplayParts(value) {
+    const parts = []
+    const gsChar = '\x1D'
+    if (!value.includes(gsChar)) {
+      parts.push({ text: value, isGs: false })
+      return parts
+    }
+    const segments = value.split(gsChar)
+    segments.forEach((seg, i) => {
+      if (seg) parts.push({ text: seg, isGs: false })
+      if (i < segments.length - 1) parts.push({ text: 'gs', isGs: true })
+    })
+    return parts
   },
 
   // 点击历史项 - 生成码记录弹出预览，扫码记录复制内容

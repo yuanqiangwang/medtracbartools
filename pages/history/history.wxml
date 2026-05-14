@@ -48,6 +48,7 @@
               <text class="item-text">{{record.text}}</text>
               <view class="item-meta">
                 <text class="item-type-badge {{record.type}}">{{record.typeLabel}}</text>
+                <text class="item-gs1-badge" wx:if="{{record.isGS1}}">GS1</text>
                 <text class="item-time">{{record.time}}</text>
               </view>
             </view>
