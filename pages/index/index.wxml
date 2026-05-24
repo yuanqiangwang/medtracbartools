@@ -15,7 +15,11 @@
   <view class="input-section">
     <view class="input-row">
       <view class="input-wrap">
-        <input class="input-field" placeholder="输入文本生成码图" value="{{inputText}}" bindinput="onInputChange" confirm-type="done" bindconfirm="quickGenerate" />
+        <!-- 扫码快捷入口（仅输入为空时显示，防误触） -->
+        <view class="input-scan-icon" wx:if="{{!inputText}}" catchtap="quickScan">
+          <image class="icon-scan-input" src="/images/icon-scan.svg" mode="aspectFit" />
+        </view>
+        <input class="input-field {{!inputText ? 'input-with-scan' : ''}}" placeholder="{{inputText ? '输入文本生成码图' : '扫码或输入文本'}}" value="{{inputText}}" bindinput="onInputChange" confirm-type="done" bindconfirm="quickGenerate" />
         <view class="input-actions" wx:if="{{inputText}}">
           <view class="input-action-btn" catchtap="copyInputText">
             <image class="input-action-icon" src="/images/icon-copy.svg" mode="aspectFit" />
@@ -62,6 +66,25 @@
       <text wx:elif="{{drugLoading}}">查询中...</text>
       <text wx:else>查询药品信息 (剩{{quotaRemaining}}次)</text>
     </button>
+  </view>
+
+  <!-- GS1 信息卡片 -->
+  <view class="gs1-card" wx:if="{{isGS1Scan && gs1Result}}">
+    <view class="gs1-badge">GS1</view>
+    <view class="gs1-detail">
+      <view class="gs1-row" wx:if="{{gs1Result.gtin}}">
+        <text class="gs1-label">GTIN</text>
+        <text class="gs1-value">{{gs1Result.gtin}}</text>
+      </view>
+      <view class="gs1-row" wx:if="{{gs1Result.lot}}">
+        <text class="gs1-label">LOT</text>
+        <text class="gs1-value">{{gs1Result.lot}}</text>
+      </view>
+      <view class="gs1-row" wx:if="{{gs1Result.expirationDate}}">
+        <text class="gs1-label">EXP</text>
+        <text class="gs1-value highlight">{{gs1Result.expirationDate}}</text>
+      </view>
+    </view>
   </view>
 
   <!-- 药品信息查询结果 -->
@@ -170,7 +193,10 @@
         <text class="recent-tag {{item.source === 'scan' ? 'tag-scan' : 'tag-gen'}}">{{item.sourceLabel}}</text>
         <text class="recent-tag {{item.type === 'qrcode' ? 'tag-qr' : 'tag-bar'}}">{{item.typeLabel}}</text>
         <text class="recent-tag tag-gs1" wx:if="{{item.isGS1}}">GS1</text>
-        <text class="recent-value">{{item.value}}</text>
+        <!-- GS1 显示摘要 -->
+        <text class="recent-value" wx:if="{{item.isGS1 && item.gs1 && (item.gs1.gtin || item.gs1.lot || item.gs1.expirationDate)}}">{{item.gs1.gtin || ''}} {{item.gs1.lot ? '· LOT:' + item.gs1.lot : ''}} {{item.gs1.expirationDate ? '· EXP:' + item.gs1.expirationDate : ''}}</text>
+        <!-- 普通显示原始值 -->
+        <text class="recent-value" wx:else>{{item.value}}</text>
         <text class="recent-length">{{item.length}}</text>
         <text class="recent-time">{{item.time}}</text>
       </view>

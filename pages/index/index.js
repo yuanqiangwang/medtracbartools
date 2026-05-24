@@ -1,9 +1,14 @@
+const { parseGS1, formatSummary } = require('../../utils/gs1-parser')
+
 Page({
   data: {
     inputText: '',
     isDrugTrace: false,
     drugIdCode: '',
     drugSerialNo: '',
+    // GS1 扫码
+    isGS1Scan: false,
+    gs1Result: null,
     recentHistory: [],
     codeType: 'barcode', // 'barcode' | 'qrcode'
     // 预览优化：分离状态
@@ -81,15 +86,15 @@ Page({
       const genHistory = wx.getStorageSync('gen_history') || []
       const all = []
       scanHistory.forEach(item => {
-        const displayParts = item.displayParts || this._parseGsDisplayParts(item.value)
+        const gs1 = item.isGS1 ? parseGS1(item.value) : null
         all.push({
           value: item.value,
-          displayParts,
           source: 'scan',
           sourceLabel: '扫码',
           type: item.type === '二维码' ? 'qrcode' : 'barcode',
           typeLabel: item.typeLabel || item.type,
           isGS1: item.isGS1,
+          gs1: gs1,
           length: item.value.length,
           time: item.time,
           timestamp: item.timestamp
@@ -140,6 +145,8 @@ Page({
       isDrugTrace: false,
       drugIdCode: '',
       drugSerialNo: '',
+      isGS1Scan: false,
+      gs1Result: null,
       drugInfo: null,
       isGeneratingPreview: false
     })
@@ -712,6 +719,12 @@ Page({
     return codes
   },
 
+  // 输入框左侧快捷扫码（防误触：仅 inputText 为空时图标才渲染）  
+  quickScan() {
+    if (this.data.inputText) return
+    this.goToScan()
+  },
+
   goToScan() {
     wx.scanCode({
       onlyFromCamera: false,
@@ -722,12 +735,21 @@ Page({
         const info = this.parseDrugTrace(result.trim())
         // 根据扫码类型设置码类型
         const isQR = res.scanType === 'QR_CODE' || res.scanType === 'DATA_MATRIX' || res.scanType === 'PDF_417'
+        // GS1 检测（非药品追溯码时）
+        let gs1Scan = false
+        let gs1Result = null
+        if (!info.isDrugTrace) {
+          gs1Result = parseGS1(result)
+          gs1Scan = gs1Result.isGS1 && gs1Result.fields.length >= 1
+        }
         this.setData({
           inputText: result,
           drugInfo: null,
           codeType: isQR ? 'qrcode' : 'barcode',
           codeImage: '',
           previewText: '',
+          isGS1Scan: gs1Scan,
+          gs1Result: gs1Scan ? gs1Result : null,
           ...info
         })
         this._lastPreviewText = ''
@@ -796,13 +818,10 @@ Page({
       const type = (scanType === 'QR_CODE' || scanType === 'DATA_MATRIX' || scanType === 'PDF_417') ? '二维码' : '条形码'
       // 检测 GS1 前缀
       const isGS1 = value.charCodeAt(0) === 29 || value.startsWith(']C1') || value.startsWith(']d')
-      // 将 GS 分隔符转换为显示用的部分
-      const displayParts = this._parseGsDisplayParts(value)
       // 去重
       scanHistory = scanHistory.filter(item => !(item.value === value && item.type === type))
       scanHistory.unshift({
         value,
-        displayParts,
         type,
         typeLabel: type,
         isGS1,
@@ -816,22 +835,6 @@ Page({
     } catch (e) {
       console.error('保存扫码历史失败', e)
     }
-  },
-
-  // 解析 GS 分隔符为显示部分
-  _parseGsDisplayParts(value) {
-    const parts = []
-    const gsChar = '\x1D'
-    if (!value.includes(gsChar)) {
-      parts.push({ text: value, isGs: false })
-      return parts
-    }
-    const segments = value.split(gsChar)
-    segments.forEach((seg, i) => {
-      if (seg) parts.push({ text: seg, isGs: false })
-      if (i < segments.length - 1) parts.push({ text: 'gs', isGs: true })
-    })
-    return parts
   },
 
   // 点击历史项 - 生成码记录弹出预览，扫码记录复制内容

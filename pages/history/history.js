@@ -1,3 +1,5 @@
+const { parseGS1, formatSummary } = require('../../utils/gs1-parser')
+
 Page({
   data: {
     activeTab: 'scan',
@@ -5,27 +7,14 @@ Page({
     allHistory: [],
     filteredHistory: [],
     groupedHistory: [],
-    previewImage: ''
+    previewImage: '',
+    // GS1 详情弹窗
+    showDetail: false,
+    detailItem: null
   },
 
   onLoad() {
     this.loadHistory()
-  },
-
-  // 解析 GS 分隔符为显示部分
-  _parseGsDisplayParts(value) {
-    const parts = []
-    const gsChar = '\x1D'
-    if (!value.includes(gsChar)) {
-      parts.push({ text: value, isGs: false })
-      return parts
-    }
-    const segments = value.split(gsChar)
-    segments.forEach((seg, i) => {
-      if (seg) parts.push({ text: seg, isGs: false })
-      if (i < segments.length - 1) parts.push({ text: 'gs', isGs: true })
-    })
-    return parts
   },
 
   onShow() {
@@ -50,7 +39,8 @@ Page({
 
       // 扫码记录
       scanHistory.forEach(item => {
-        const displayParts = item.displayParts || this._parseGsDisplayParts(item.value)
+        // GS1 解析
+        const gs1 = item.isGS1 ? parseGS1(item.value) : null
         all.push({
           ...item,
           source: 'scan',
@@ -58,7 +48,7 @@ Page({
           type: item.type === '条形码' ? 'barcode' : 'qrcode',
           typeLabel: item.type,
           isGS1: item.isGS1,
-          displayParts,
+          gs1: gs1,
           id: 'scan_' + item.timestamp + '_' + item.value,
           text: item.value,
           imagePath: item.imagePath || ''
@@ -77,7 +67,7 @@ Page({
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab
     if (tab === this.data.activeTab) return
-    this.setData({ activeTab: tab, previewImage: '' })
+    this.setData({ activeTab: tab, previewImage: '', showDetail: false, detailItem: null })
     this.applyFilter()
   },
 
@@ -88,13 +78,18 @@ Page({
 
   applyFilter() {
     const { activeTab, searchText, allHistory } = this.data
-    // 按 source 过滤：scan 或 generate
     let filtered = allHistory.filter(item => item.source === activeTab)
     if (searchText.trim()) {
       const kw = searchText.trim().toLowerCase()
-      filtered = filtered.filter(item =>
-        (item.text && item.text.toLowerCase().includes(kw))
-      )
+      filtered = filtered.filter(item => {
+        if (item.text && item.text.toLowerCase().includes(kw)) return true
+        // Also search GS1 fields
+        if (item.gs1) {
+          const gs1Text = [item.gs1.gtin, item.gs1.lot, item.gs1.expirationDate, item.gs1.serial, item.gs1.productionDate].filter(Boolean).join(' ').toLowerCase()
+          if (gs1Text.includes(kw)) return true
+        }
+        return false
+      })
     }
     // 按日期分组
     const groups = {}
@@ -124,13 +119,33 @@ Page({
     return `${d.getMonth() + 1}月${d.getDate()}日`
   },
 
+  // 点击卡片 - GS1 打开详情，普通复制内容
   onItemTap(e) {
     const id = e.currentTarget.dataset.id
     const item = this.data.filteredHistory.find(h => h.id === id)
     if (!item) return
+    if (item.isGS1 && item.gs1) {
+      this.setData({ showDetail: true, detailItem: item })
+    } else {
+      wx.setClipboardData({
+        data: item.text,
+        success: () => wx.showToast({ title: '已复制', icon: 'success' })
+      })
+    }
+  },
+
+  // 关闭详情
+  closeDetail() {
+    this.setData({ showDetail: false, detailItem: null })
+  },
+
+  // 复制原始数据
+  copyRawData() {
+    const item = this.data.detailItem
+    if (!item) return
     wx.setClipboardData({
       data: item.text,
-      success: () => wx.showToast({ title: '已复制', icon: 'success' })
+      success: () => wx.showToast({ title: '已复制 GS1 原始数据', icon: 'success' })
     })
   },
 
@@ -189,6 +204,7 @@ Page({
           scanHistory = scanHistory.filter(h => !(h.value === item.text && h.type === item.typeLabel && h.timestamp === item.timestamp))
           wx.setStorageSync('scan_history', scanHistory)
         }
+        this.setData({ showDetail: false, detailItem: null })
         this.loadHistory()
         wx.showToast({ title: '已删除', icon: 'success' })
       }

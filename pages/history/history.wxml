@@ -33,7 +33,7 @@
         <view class="date-items">
           <view class="history-item" wx:for="{{item.items}}" wx:for-item="record" wx:key="id" bindtap="onItemTap" data-id="{{record.id}}">
             <!-- 缩略图（仅生成码记录） -->
-            <view class="item-thumb" wx:if="{{record.source === 'generate'}}" bindtap="onThumbTap" data-id="{{record.id}}" data-image="{{record.imagePath}}">
+            <view class="item-thumb" wx:if="{{record.source === 'generate'}}" catchtap="onThumbTap" data-id="{{record.id}}" data-image="{{record.imagePath}}">
               <image class="thumb-img {{record.type === 'barcode' ? 'thumb-bar' : ''}}" src="{{record.imagePath}}" mode="aspectFit" wx:if="{{record.imagePath}}" />
               <view class="thumb-placeholder" wx:else>
                 <image class="thumb-placeholder-icon" src="/images/icon-{{record.type}}.svg" mode="aspectFit" />
@@ -45,7 +45,30 @@
             </view>
             <!-- 内容 -->
             <view class="item-content">
-              <text class="item-text">{{record.text}}</text>
+              <!-- GS1 记录：显示字段摘要 -->
+              <block wx:if="{{record.isGS1 && record.gs1}}">
+                <view class="item-gs1-summary">
+                  <view class="gs1-field" wx:if="{{record.gs1.gtin}}">
+                    <text class="gs1-field-label">GTIN</text>
+                    <text class="gs1-field-value">{{record.gs1.gtin}}</text>
+                  </view>
+                  <view class="gs1-field" wx:if="{{record.gs1.lot}}">
+                    <text class="gs1-field-label">LOT</text>
+                    <text class="gs1-field-value">{{record.gs1.lot}}</text>
+                  </view>
+                  <view class="gs1-field" wx:if="{{record.gs1.expirationDate}}">
+                    <text class="gs1-field-label">EXP</text>
+                    <text class="gs1-field-value">{{record.gs1.expirationDate}}</text>
+                  </view>
+                  <view class="gs1-field" wx:if="{{!record.gs1.gtin && !record.gs1.lot && !record.gs1.expirationDate}}">
+                    <text class="gs1-field-value raw">{{record.text}}</text>
+                  </view>
+                </view>
+              </block>
+              <!-- 普通记录：显示原始文本 -->
+              <block wx:else>
+                <text class="item-text">{{record.text}}</text>
+              </block>
               <view class="item-meta">
                 <text class="item-type-badge {{record.type}}">{{record.typeLabel}}</text>
                 <text class="item-gs1-badge" wx:if="{{record.isGS1}}">GS1</text>
@@ -75,6 +98,46 @@
       <view class="act-btn act-ghost" catchtap="closePreview">关闭</view>
     </view>
     <view class="preview-hint">长按图片保存/分享</view>
+  </view>
+
+  <!-- GS1 结构化详情弹窗 -->
+  <view class="gs1-detail-mask" wx:if="{{showDetail && detailItem}}" bindtap="closeDetail">
+    <view class="gs1-detail-card" catchtap="">
+      <!-- 头部 -->
+      <view class="gs1-detail-header">
+        <text class="gs1-detail-title">GS1 追溯数据</text>
+        <text class="gs1-detail-close" bindtap="closeDetail">✕</text>
+      </view>
+
+      <!-- 结构化字段 -->
+      <view class="gs1-detail-body">
+        <block wx:for="{{detailItem.gs1.fields}}" wx:key="ai">
+          <view class="gs1-detail-row">
+            <view class="gs1-detail-left">
+              <text class="gs1-detail-ai">AI {{item.ai}}</text>
+              <text class="gs1-detail-label">{{item.label}}</text>
+            </view>
+            <text class="gs1-detail-value" selectable="true">{{item.value}}</text>
+          </view>
+        </block>
+      </view>
+
+      <!-- 原始数据 -->
+      <view class="gs1-detail-raw">
+        <view class="gs1-detail-raw-header">
+          <text class="gs1-detail-raw-label">原始数据</text>
+          <text class="gs1-detail-raw-copy" bindtap="copyRawData">复制</text>
+        </view>
+        <view class="gs1-detail-raw-box">
+          <text class="gs1-detail-raw-text" selectable="true">{{detailItem.text}}</text>
+        </view>
+      </view>
+
+      <!-- 底部信息 -->
+      <view class="gs1-detail-footer">
+        <text class="gs1-detail-source">{{detailItem.sourceLabel}} · {{detailItem.typeLabel}} · {{detailItem.time}}</text>
+      </view>
+    </view>
   </view>
 
   <!-- 底部操作 -->
