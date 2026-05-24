@@ -2,13 +2,14 @@
   "pages": [
     "pages/index/index",
     "pages/barcode/barcode",
+    "pages/batchbarcode/batchbarcode",
     "pages/history/history",
     "pages/admin/admin",
     "pages/logs/logs"
   ],
   "window": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "MedTrac",
+    "navigationBarTitleText": "游游制码",
     "navigationBarBackgroundColor": "#ffffff"
   },
   "style": "v2",

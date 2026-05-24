@@ -204,4 +204,17 @@ Page({
       }
     })
   },
+
+  onShareAppMessage() {
+    return {
+      title: '条码生成工具 - 游游制码',
+      path: '/pages/barcode/barcode'
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '条码生成工具 - 游游制码'
+    }
+  }
 })

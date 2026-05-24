@@ -200,5 +200,18 @@ Page({
         wx.showToast({ title: '分享失败', icon: 'none' })
       }
     })
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '生成二维码 - 游游制码',
+      path: '/pages/qrcode/qrcode'
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '生成二维码 - 游游制码'
+    }
   }
 })

@@ -134,7 +134,7 @@
     </view>
   </view>
 
-  <!-- 功能卡片（3个：Scan / History / Support） -->
+  <!-- 功能卡片（3个：Scan / History / Batch） -->
   <view class="feature-row">
     <view class="feature-card" bindtap="goToScan">
       <view class="feature-icon">
@@ -149,6 +149,13 @@
       </view>
       <text class="feature-name">历史</text>
       <text class="feature-desc">查看生成记录</text>
+    </view>
+    <view class="feature-card" bindtap="goToBatchBarcode">
+      <view class="feature-icon">
+        <image class="icon-svg" src="/images/icon-batch.svg" mode="aspectFit" />
+      </view>
+      <text class="feature-name">批量生成</text>
+      <text class="feature-desc">批量生成条码</text>
     </view>
   </view>
 

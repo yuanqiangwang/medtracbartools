@@ -874,6 +874,11 @@ Page({
     wx.navigateTo({ url: '/pages/history/history' })
   },
 
+  // 跳转到批量生成页面
+  goToBatchBarcode() {
+    wx.navigateTo({ url: '/pages/batchbarcode/batchbarcode' })
+  },
+
   // 清空历史
   clearHistory() {
     wx.showModal({
@@ -887,5 +892,18 @@ Page({
         }
       }
     })
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '游游制码 - 扫码 · 生成 · 识别',
+      path: '/pages/index/index'
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '游游制码 - 扫码 · 生成 · 识别'
+    }
   }
 })

@@ -211,5 +211,18 @@ Page({
         wx.showToast({ title: '已清空', icon: 'success' })
       }
     })
+  },
+
+  onShareAppMessage() {
+    return {
+      title: '游游制码 - 历史记录',
+      path: '/pages/history/history'
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: '游游制码 - 历史记录'
+    }
   }
 })

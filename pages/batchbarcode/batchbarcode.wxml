@@ -1,0 +1,104 @@
+<!--pages/batchbarcode/batchbarcode.wxml-->
+<view class="page-container">
+  <!-- 输入区域 -->
+  <view class="input-section">
+    <view class="input-header">
+      <text class="input-label">输入内容</text>
+      <text class="input-hint">每行一个，最多50条</text>
+    </view>
+    <textarea
+      class="content-input"
+      placeholder="请输入或粘贴内容，每行一条&#10;例如：&#10;1234567890123&#10;ABC12345678&#10;..."
+      value="{{inputText}}"
+      bindinput="onInput"
+      maxlength="2000"
+      auto-height
+    />
+    <view class="input-footer">
+      <text class="char-count" bindtap="pasteFromClipboard">{{lineCount > 0 ? lineCount + ' 条，点击粘贴' : '点击输入或粘贴内容'}}</text>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-row">
+    <view class="btn-clear" bindtap="clearInput">
+      <text>清空</text>
+    </view>
+    <view class="btn-generate" bindtap="generateBatch">
+      <text>生成 {{lineCount > 0 ? lineCount : ''}} 个</text>
+    </view>
+  </view>
+
+  <!-- 生成结果 -->
+  <view class="result-section" wx:if="{{results.length > 0}}">
+    <view class="result-header">
+      <text class="result-count">{{results.length}} 条结果</text>
+      <view class="result-header-actions">
+        <text class="header-action" bindtap="saveAllImages" wx:if="{{saveProgress < 0}}">全部保存</text>
+        <text class="header-action" bindtap="clearResults">清空</text>
+      </view>
+    </view>
+
+    <view class="batch-tip" wx:if="{{saveProgress >= 0}}">
+      <text>保存中 {{saveProgress + 1}}/{{results.length}}</text>
+    </view>
+
+    <!-- 结果列表 -->
+    <view class="result-list">
+      <view class="result-item" wx:for="{{results}}" wx:key="index">
+        <!-- 序号圆形徽章 -->
+        <view class="result-badge">{{index + 1}}</view>
+        <!-- 卡片主体：文字在上，图片在下 -->
+        <view class="result-body">
+          <text class="result-text">{{item.text}}</text>
+          <image
+            wx:if="{{item.imagePath}}"
+            class="result-image"
+            src="{{item.imagePath}}"
+            mode="aspectFit"
+            bindtap="openPreview"
+            data-index="{{index}}"
+          />
+          <text wx:if="{{item.error}}" class="result-error">{{item.error}}</text>
+        </view>
+        <!-- 更多菜单 -->
+        <view class="result-more" bindtap="showItemMenu" data-index="{{index}}">⋯</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{hasInput && results.length === 0 && isGenerating}}">
+    <view class="spinner"></view>
+    <text>正在生成...</text>
+  </view>
+
+  <!-- 错误提示 -->
+  <view class="error-toast" wx:if="{{errorMsg}}">
+    <text>{{errorMsg}}</text>
+  </view>
+</view>
+
+<!-- 隐藏 Canvas -->
+<canvas type="2d" id="batchBarcodeCanvas" style="position:fixed;left:-9999px;top:-9999px;width:680rpx;height:280rpx;"></canvas>
+
+<!-- 条码预览弹窗（手势切换） -->
+<view class="preview-mask" wx:if="{{previewVisible}}" bindtap="closePreview">
+  <view class="preview-body" catchtap="">
+    <image
+      class="preview-image"
+      src="{{previewImage}}"
+      mode="widthFix"
+      catchtouchstart="onPreviewTouchStart"
+      catchtouchend="onPreviewTouchEnd"
+    />
+    <text class="preview-text">{{previewIndex + 1}} / {{results.length}}  {{previewText}}</text>
+    <view class="preview-counter" wx:if="{{results.length > 1}}">
+      <text class="preview-swipe-hint">左右滑动切换</text>
+    </view>
+  </view>
+  <view class="preview-actions">
+    <text class="preview-save" bindtap="savePreview">保存到相册</text>
+    <text class="preview-close" bindtap="closePreview">关闭</text>
+  </view>
+</view>
